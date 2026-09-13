@@ -1,0 +1,292 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --------------------------------------------------
+// User
+// --------------------------------------------------
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  number    String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --------------------------------------------------
+// Items
+// --------------------------------------------------
+
+enum ItemType {
+  PRODUCT
+  MATERIAL
+}
+
+model Item {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  type      ItemType
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  variants Variant[]
+}
+
+// --------------------------------------------------
+// Variants
+// --------------------------------------------------
+
+model Variant {
+  id         Int      @id @default(autoincrement())
+  itemId     Int
+  unitWeight Decimal  @default(1) @db.Decimal(6, 3)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  item              Item              @relation(fields: [itemId], references: [id])
+  stockMovements    StockMovement[]
+  importItems       ImportItem[]
+  exportItems       ExportItem[]
+  productionEntries ProductionEntry[]
+  consumptions      Consumption[]
+
+  @@unique([itemId, unitWeight])
+}
+
+// --------------------------------------------------
+// Stock Movements
+// --------------------------------------------------
+
+enum StockMovementType {
+  IMPORT
+  EXPORT
+  PRODUCTION
+  CONSUMPTION
+}
+
+model StockMovement {
+  id              Int               @id @default(autoincrement())
+  variantId       Int
+  quantityChanged Int
+  type            StockMovementType
+  typeRef         Int?
+  completedAt     DateTime          @default(now())
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  variant Variant @relation(fields: [variantId], references: [id])
+}
+
+// --------------------------------------------------
+// Suppliers
+// --------------------------------------------------
+
+model Supplier {
+  id        Int      @id @default(autoincrement())
+  name      String
+  number    String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  imports Import[]
+}
+
+// --------------------------------------------------
+// Imports
+// --------------------------------------------------
+
+model Import {
+  id          Int      @id @default(autoincrement())
+  supplierId  Int
+  completedAt DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  supplier    Supplier     @relation(fields: [supplierId], references: [id])
+  importItems ImportItem[]
+}
+
+model ImportItem {
+  id        Int      @id @default(autoincrement())
+  importId  Int
+  variantId Int
+  quantity  Int
+  unitPrice Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  import  Import  @relation(fields: [importId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id])
+
+  @@unique([importId, variantId])
+}
+
+// --------------------------------------------------
+// Customers
+// --------------------------------------------------
+
+model Customer {
+  id        Int      @id @default(autoincrement())
+  name      String
+  number    String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  exports Export[]
+}
+
+// --------------------------------------------------
+// Exports
+// --------------------------------------------------
+
+model Export {
+  id          Int      @id @default(autoincrement())
+  customerId  Int
+  completedAt DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  exportItems ExportItem[]
+}
+
+model ExportItem {
+  id        Int      @id @default(autoincrement())
+  exportId  Int
+  variantId Int
+  quantity  Int
+  unitPrice Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  export  Export  @relation(fields: [exportId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id])
+
+  @@unique([exportId, variantId])
+}
+
+// --------------------------------------------------
+// Seasons
+// --------------------------------------------------
+
+model Season {
+  id        Int       @id @default(autoincrement())
+  startDate DateTime  @default(now()) @db.Date
+  endDate   DateTime? @db.Date
+  name      String?
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  weeks Week[]
+}
+
+// --------------------------------------------------
+// Weeks
+// --------------------------------------------------
+
+model Week {
+  id        Int       @id @default(autoincrement())
+  seasonId  Int
+  startDate DateTime  @default(now()) @db.Date
+  endDate   DateTime? @db.Date
+  notes     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  season         Season          @relation(fields: [seasonId], references: [id])
+  productionDays ProductionDay[]
+}
+
+// --------------------------------------------------
+// Production Days
+// --------------------------------------------------
+
+model ProductionDay {
+  id             Int       @id @default(autoincrement())
+  productionDate DateTime  @default(now()) @db.Date
+  startedAt      DateTime  @default(now())
+  endedAt        DateTime?
+  weekId         Int
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  week              Week              @relation(fields: [weekId], references: [id])
+  productionEntries ProductionEntry[]
+  consumptions      Consumption[]
+
+  @@unique([productionDate, weekId])
+}
+
+// --------------------------------------------------
+// Production Entries
+// --------------------------------------------------
+
+model ProductionEntry {
+  id              Int      @id @default(autoincrement())
+  productionDayId Int
+  variantId       Int
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productionDay ProductionDay     @relation(fields: [productionDayId], references: [id])
+  variant       Variant           @relation(fields: [variantId], references: [id])
+  batches       ProductionBatch[]
+
+  @@unique([productionDayId, variantId])
+}
+
+// --------------------------------------------------
+// Production Batches
+// --------------------------------------------------
+
+model ProductionBatch {
+  id                Int      @id @default(autoincrement())
+  productionEntryId Int
+  quantity          Int
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  productionEntry ProductionEntry @relation(fields: [productionEntryId], references: [id])
+}
+
+// --------------------------------------------------
+// Consumption
+// --------------------------------------------------
+
+model Consumption {
+  id              Int      @id @default(autoincrement())
+  productionDayId Int
+  variantId       Int
+  quantity        Int
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id])
+
+  variant Variant @relation(fields: [variantId], references: [id])
+
+  @@unique([productionDayId, variantId])
+}
