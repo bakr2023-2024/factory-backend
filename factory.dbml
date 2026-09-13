@@ -1,0 +1,124 @@
+TablePartial table_fields{
+    id int [pk,increment]
+    notes text
+    created_at timestamp [default: `CURRENT_TIMESTAMP`]
+    updated_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+table items{
+    name varchar(40) [not null]
+    type item_type [not null]
+    ~table_fields
+    indexes {
+        name [unique]
+    }
+}
+enum item_type{
+    product
+    material
+}
+table variants{
+    item_id int [ref: > items.id,not null]
+    unit_weight decimal(6,3) [default: 1]
+    ~table_fields
+    indexes {
+        (item_id,unit_weight) [unique]
+    }
+}
+table stock_movements{
+    variant_id int [ref: > variants.id,not null]
+    quantity_changed int [not null]
+    type stock_movement_type [not null]
+    type_ref int
+    completed_at timestamp [default: `CURRENT_TIMESTAMP`]
+    ~table_fields
+}
+enum stock_movement_type{
+    import
+    export
+    production
+    consumption
+}
+table suppliers{
+    ~table_fields
+    name varchar(60) [not null]
+    number varchar(30)
+}
+table imports{
+    ~table_fields
+    supplier_id int [ref: > suppliers.id,not null]
+    completed_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+table import_items{
+    ~table_fields
+    import_id int [ref: > imports.id,not null]
+    variant_id int [ref: > variants.id,not null]
+    quantity int [not null]
+    unit_price int
+    indexes {
+        (import_id,variant_id) [unique]
+    }
+}
+table customers{
+    ~table_fields
+    name varchar(60) [not null]
+    number varchar(30)
+}
+table exports{
+    ~table_fields
+    customer_id int [ref: > customers.id,not null]
+    completed_at timestamp [default: `CURRENT_TIMESTAMP`]
+}
+table export_items{
+    ~table_fields
+    export_id int [ref: > exports.id,not null]
+    variant_id int [ref: > variants.id,not null]
+    quantity int [not null]
+    unit_price int
+        indexes {
+        (export_id,variant_id) [unique]
+    }
+}
+table seasons{
+    ~table_fields
+    start_date date [default: `CURRENT_DATE`]
+    end_date date
+    name varchar(50)
+}
+table weeks{
+    ~table_fields
+    season_id int [ref: > seasons.id ,not null]
+    start_date date [default: `CURRENT_DATE`]
+    end_date date
+}
+table production_days{
+    ~table_fields
+    production_date date [default: `CURRENT_DATE`]
+    started_at timestamp [default: `CURRENT_TIMESTAMP`]
+    ended_at timestamp
+    week_id int [ref: > weeks.id,not null]
+    indexes {
+        (production_date,week_id) [unique]
+    }
+}
+table production_entries{
+    ~table_fields
+    production_day_id int [ref: > production_days.id]
+    variant_id int [ref: > variants.id]
+    indexes {
+        (production_day_id,variant_id) [unique]
+    }
+}
+table production_batch{
+    ~table_fields
+    production_entry_id int [ref: > production_entries.id]
+    quantity int [not null]
+}
+table consumption{
+    ~table_fields
+    production_day_id int [ref: > production_days.id]
+    variant_id int [ref: > variants.id]
+    quantity int [not null]
+    indexes {
+        (production_day_id,variant_id) [unique]
+    }
+}

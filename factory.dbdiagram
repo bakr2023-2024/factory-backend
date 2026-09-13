@@ -1,0 +1,332 @@
+{
+  "version": "3.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "relationshipMode": "All",
+    "tablePositions": [
+      {
+        "name": "items",
+        "schemaName": "public",
+        "x": 16,
+        "y": 16
+      },
+      {
+        "name": "stock_movements",
+        "schemaName": "public",
+        "x": 968,
+        "y": 16
+      },
+      {
+        "name": "variants",
+        "schemaName": "public",
+        "x": 472,
+        "y": 16
+      },
+      {
+        "name": "suppliers",
+        "schemaName": "public",
+        "x": 16,
+        "y": 280
+      },
+      {
+        "name": "customers",
+        "schemaName": "public",
+        "x": 16,
+        "y": 552
+      },
+      {
+        "name": "imports",
+        "schemaName": "public",
+        "x": 472,
+        "y": 280
+      },
+      {
+        "name": "import_items",
+        "schemaName": "public",
+        "x": 968,
+        "y": 376
+      },
+      {
+        "name": "exports",
+        "schemaName": "public",
+        "x": 472,
+        "y": 552
+      },
+      {
+        "name": "export_items",
+        "schemaName": "public",
+        "x": 968,
+        "y": 712
+      },
+      {
+        "name": "production_days",
+        "schemaName": "public",
+        "x": 968,
+        "y": 1048
+      },
+      {
+        "name": "seasons",
+        "schemaName": "public",
+        "x": 16,
+        "y": 824
+      },
+      {
+        "name": "weeks",
+        "schemaName": "public",
+        "x": 472,
+        "y": 824
+      },
+      {
+        "name": "production_entries",
+        "schemaName": "public",
+        "x": 1520,
+        "y": 16
+      },
+      {
+        "name": "production_batch",
+        "schemaName": "public",
+        "x": 1984,
+        "y": 16
+      },
+      {
+        "name": "consumption",
+        "schemaName": "public",
+        "x": 1520,
+        "y": 280
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": [
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "items",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "item_id"
+        ],
+        "secondTableName": "variants",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "variants",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "variant_id"
+        ],
+        "secondTableName": "stock_movements",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "suppliers",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "supplier_id"
+        ],
+        "secondTableName": "imports",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "imports",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "import_id"
+        ],
+        "secondTableName": "import_items",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "variants",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "variant_id"
+        ],
+        "secondTableName": "import_items",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "variants",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "variant_id"
+        ],
+        "secondTableName": "export_items",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "customers",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "customer_id"
+        ],
+        "secondTableName": "exports",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "exports",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "export_id"
+        ],
+        "secondTableName": "export_items",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "seasons",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "season_id"
+        ],
+        "secondTableName": "weeks",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "weeks",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "week_id"
+        ],
+        "secondTableName": "production_days",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "production_days",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "production_day_id"
+        ],
+        "secondTableName": "production_entries",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "production_entries",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "production_entry_id"
+        ],
+        "secondTableName": "production_batch",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "variants",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "variant_id"
+        ],
+        "secondTableName": "production_entries",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "production_days",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "production_day_id"
+        ],
+        "secondTableName": "consumption",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "variants",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "variant_id"
+        ],
+        "secondTableName": "consumption",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      }
+    ]
+  },
+  "views": {}
+}
