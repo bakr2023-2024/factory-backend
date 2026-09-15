@@ -1,20 +1,30 @@
 import z from "zod";
+export enum Role {
+  Admin = "ADMIN",
+  User = "USER",
+}
 export const signup = {
   body: z
     .strictObject({
-      name: z.string().min(3),
+      username: z.string().min(3),
       number: z.string().min(7).max(30),
-      password: z.string().regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/),
+      role: z.enum(Object.values(Role)).optional().default(Role.User),
+      password: z
+        .string()
+        .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/, {
+          message:
+            "make sure that password at least contains 8 characters, contains a number, a lowercase letter and an uppercase letter",
+        }),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {
-      message: "password and confirmPassword mismatch",
+      message: "password and confirmPassword are mismatched",
       path: ["confirmPassword"],
     }),
 };
 export const login = {
   body: z.strictObject({
-    name: z.string(),
+    username: z.string(),
     password: z.string(),
   }),
 };

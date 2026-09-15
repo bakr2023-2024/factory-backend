@@ -4,14 +4,15 @@ import { hash, compare } from "../../utils/security/hash.security";
 import { loginDTO, signupDTO } from "./auth.validation";
 
 export const createUser = async (userDTO: signupDTO) => {
-  const user = await prisma.user.findUnique({
-    where: { name: userDTO.name },
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ username: userDTO.username }, { number: userDTO.number }] },
   });
-  if (user) throw new ConflictException("User with this name already exists");
+  if (user)
+    throw new ConflictException("User with this name/number already exists");
   try {
     return await prisma.user.create({
       data: {
-        name: userDTO.name,
+        username: userDTO.username,
         number: userDTO.number,
         password: await hash(userDTO.password),
       },
@@ -25,6 +26,8 @@ export const createUser = async (userDTO: signupDTO) => {
 };
 
 export const findUser = async (userDTO: loginDTO) => {
-  const user = await prisma.user.findUnique({ where: { name: userDTO.name } });
+  const user = await prisma.user.findUnique({
+    where: { username: userDTO.username },
+  });
   return user && (await compare(userDTO.password, user.password)) ? user : null;
 };

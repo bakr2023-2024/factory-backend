@@ -9,5 +9,5 @@
     "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
-  "exclude": ["src/db/generated/**/*"]
+  "exclude": ["src/db/generated/**/*","tests/**/*"]
 }

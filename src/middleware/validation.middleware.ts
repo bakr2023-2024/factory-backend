@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
-import { ZodObject } from "zod";
+import { ZodType } from "zod";
 import { BadRequestException } from "../utils/exceptions";
 type ReqKey = keyof Request;
-type Schema = Partial<Record<ReqKey, ZodObject>>;
+type Schema = Partial<Record<ReqKey, ZodType>>;
 const validation = (schema: Schema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const errors: {
@@ -21,10 +21,10 @@ const validation = (schema: Schema) => {
           })),
         });
       }
-      if (errors.length)
-        throw new BadRequestException("Validation Error", { errors });
-      next();
     }
+    if (errors.length)
+      throw new BadRequestException("Validation Error", { errors });
+    next();
   };
 };
 export default validation;
