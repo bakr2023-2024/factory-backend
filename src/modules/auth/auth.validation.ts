@@ -1,4 +1,5 @@
 import z from "zod";
+import { fields } from "../../utils/generalFields";
 export enum Role {
   Admin = "ADMIN",
   User = "USER",
@@ -6,15 +7,13 @@ export enum Role {
 export const signup = {
   body: z
     .strictObject({
-      username: z.string().min(3),
+      username: fields.name,
       number: z.string().min(7).max(30),
       role: z.enum(Object.values(Role)).optional().default(Role.User),
-      password: z
-        .string()
-        .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/, {
-          message:
-            "make sure that password at least contains 8 characters, contains a number, a lowercase letter and an uppercase letter",
-        }),
+      password: z.string().regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}$/, {
+        message:
+          "make sure that password at least contains 8 characters, contains a number, a lowercase letter and an uppercase letter",
+      }),
       confirmPassword: z.string(),
     })
     .refine((data) => data.password === data.confirmPassword, {

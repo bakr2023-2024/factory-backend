@@ -4,10 +4,13 @@ import express, {
   type Response,
 } from "express";
 import authRouter from "./modules/auth/auth.route";
+import itemRouter from "./modules/item/item.route";
 import { HttpException } from "./utils/exceptions";
+import prisma from "./db/prisma";
 const app = express();
 app.use(express.json());
 app.use("/auth", authRouter);
+app.use("/items", itemRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );

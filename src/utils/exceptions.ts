@@ -1,7 +1,7 @@
-export class HttpException extends Error {
+export abstract class HttpException extends Error {
   constructor(
-    message: string = "Internal Server Error",
-    public readonly statusCode: number = 500,
+    message: string,
+    public readonly statusCode: number,
     cause?: unknown,
   ) {
     super(message, { cause });
@@ -18,5 +18,15 @@ export class BadRequestException extends HttpException {
 export class ConflictException extends HttpException {
   constructor(message: string, cause?: unknown) {
     super(message, 409, cause);
+  }
+}
+export class NotFoundException extends HttpException {
+  constructor(message: string, cause?: unknown) {
+    super(message, 404, cause);
+  }
+}
+export class InternalServerException extends HttpException {
+  constructor(message: string, cause?: unknown) {
+    super(message, 500, cause);
   }
 }
