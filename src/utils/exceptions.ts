@@ -1,8 +1,10 @@
+import { ErrorDetail } from "./types/types";
+
 export abstract class HttpException extends Error {
   constructor(
     message: string,
     public readonly statusCode: number,
-    cause?: unknown,
+    public readonly cause?: ErrorDetail[],
   ) {
     super(message, { cause });
     this.name = this.constructor.name;
@@ -11,22 +13,22 @@ export abstract class HttpException extends Error {
   }
 }
 export class BadRequestException extends HttpException {
-  constructor(message: string, cause?: unknown) {
+  constructor(message: string, cause?: ErrorDetail[]) {
     super(message, 400, cause);
   }
 }
 export class ConflictException extends HttpException {
-  constructor(message: string, cause?: unknown) {
+  constructor(message: string, cause?: ErrorDetail[]) {
     super(message, 409, cause);
   }
 }
 export class NotFoundException extends HttpException {
-  constructor(message: string, cause?: unknown) {
+  constructor(message: string, cause?: ErrorDetail[]) {
     super(message, 404, cause);
   }
 }
 export class InternalServerException extends HttpException {
-  constructor(message: string, cause?: unknown) {
+  constructor(message: string, cause?: ErrorDetail[]) {
     super(message, 500, cause);
   }
 }

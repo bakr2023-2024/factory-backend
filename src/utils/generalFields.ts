@@ -23,7 +23,6 @@ export const fields = {
       })
       .transform((val) => Number(val))
       .default(0),
-    search: z.string().min(2).optional(),
   }),
 };
 export type paginateDTO = z.infer<typeof fields.paginate>;
