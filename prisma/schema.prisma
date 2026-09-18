@@ -1,8 +1,8 @@
 // This is your Prisma schema file
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/db/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/db/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -13,7 +13,7 @@ datasource db {
 // --------------------------------------------------
 // User
 // --------------------------------------------------
-enum Role{
+enum Role {
   ADMIN
   USER
 }
@@ -87,7 +87,6 @@ model StockMovement {
   quantityChanged Int
   type            StockMovementType
   typeRef         Int?
-  completedAt     DateTime          @default(now())
   notes           String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -115,12 +114,11 @@ model Supplier {
 // --------------------------------------------------
 
 model Import {
-  id          Int      @id @default(autoincrement())
-  supplierId  Int
-  completedAt DateTime @default(now())
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  supplierId Int
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   supplier    Supplier     @relation(fields: [supplierId], references: [id])
   importItems ImportItem[]
@@ -162,12 +160,11 @@ model Customer {
 // --------------------------------------------------
 
 model Export {
-  id          Int      @id @default(autoincrement())
-  customerId  Int
-  completedAt DateTime @default(now())
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  customerId Int
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   customer    Customer     @relation(fields: [customerId], references: [id])
   exportItems ExportItem[]
