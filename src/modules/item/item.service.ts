@@ -15,17 +15,17 @@ import {
 } from "./item.validation";
 
 export const getItems = async (pagination: paginateItemsDTO) => {
-  const totalItems = await prisma.item.count();
+  const totalCount = await prisma.item.count();
   const page = pagination.page;
-  const size = pagination.size > 0 ? pagination.size : totalItems;
-  const totalPages = Math.ceil(totalItems / size);
+  const size = pagination.size > 0 ? pagination.size : totalCount;
+  const totalPages = Math.ceil(totalCount / size);
   const query: any = {
     skip: (page - 1) * pagination.size,
     take: size,
   };
-  if (pagination.search) {
+  if (pagination.name) {
     query["where"] = {
-      name: { contains: pagination.search, mode: "insensitive" },
+      name: { contains: pagination.name, mode: "insensitive" },
     };
   }
   const items = await prisma.item.findMany(query);
@@ -34,7 +34,7 @@ export const getItems = async (pagination: paginateItemsDTO) => {
     page,
     size,
     totalPages,
-    totalItems,
+    totalCount,
   };
 };
 export const getItem = async (params: getItemParamsDTO) => {

@@ -17,22 +17,22 @@ export const getItems = async (req: Request, res: Response) => {
 };
 export const getItem = async (req: Request, res: Response) => {
   const dto = req.params as unknown as getItemParamsDTO;
-  const item = await itemService.getItem(dto);
-  return res.json({ item });
+  const data = await itemService.getItem(dto);
+  return res.json({ data });
 };
 export const createItem = async (req: Request, res: Response) => {
   const dto = req.body as createItemBodyDTO;
-  const item = await itemService.createItem(dto);
-  return res.status(201).json({ item });
+  const data = await itemService.createItem(dto);
+  return res.status(201).json({ data });
 };
 export const updateItem = async (req: Request, res: Response) => {
   const params = req.params as unknown as updateItemParamsDTO;
   const body = req.body as updateItemBodyDTO;
-  const item = await itemService.updateItem(params, body);
-  return res.json({ item });
+  const data = await itemService.updateItem(params, body);
+  return res.json({ data });
 };
 export const deleteItem = async (req: Request, res: Response) => {
   const dto = req.params as unknown as deleteItemParamsDTO;
-  const item = await itemService.deleteItem(dto);
-  return res.json({ item });
+  const data = await itemService.deleteItem(dto);
+  return res.json({ data });
 };

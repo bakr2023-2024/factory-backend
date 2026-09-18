@@ -1,12 +1,14 @@
 import z from "zod";
-import { fields, paginateDTO } from "../../utils/generalFields";
+import { fields } from "../../utils/generalFields";
 export enum ItemType {
   Product = "PRODUCT",
   Material = "MATERIAL",
 }
 
 export const paginateItems = {
-  query: fields.paginate,
+  query: fields.paginate.extend({
+    name: z.string().min(2).optional(),
+  }),
 };
 export const getItem = {
   params: z.strictObject({
@@ -17,6 +19,7 @@ export const createItem = {
   body: z.strictObject({
     name: fields.name,
     type: z.enum(Object.values(ItemType)),
+    notes: z.string().optional(),
   }),
 };
 export const updateItem = {
@@ -26,6 +29,7 @@ export const updateItem = {
   body: z.strictObject({
     name: fields.name.optional(),
     type: z.enum(Object.values(ItemType)).optional(),
+    notes: z.string().optional(),
   }),
 };
 export const deleteItem = {
@@ -34,7 +38,7 @@ export const deleteItem = {
   }),
 };
 
-export type paginateItemsDTO = paginateDTO;
+export type paginateItemsDTO = z.infer<typeof paginateItems.query>;
 export type getItemParamsDTO = z.infer<typeof getItem.params>;
 export type createItemBodyDTO = z.infer<typeof createItem.body>;
 export type updateItemParamsDTO = z.infer<typeof updateItem.params>;
