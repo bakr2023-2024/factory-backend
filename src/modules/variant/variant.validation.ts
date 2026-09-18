@@ -2,7 +2,10 @@ import z from "zod";
 import { fields } from "../../utils/generalFields";
 
 export const paginateVariants = {
-  query: fields.paginate.extend({ itemId: fields.idParam.optional() }),
+  query: fields.paginate.extend({
+    itemId: fields.idParam.optional(),
+    name: fields.name.optional(),
+  }),
 };
 export const getVariant = {
   params: z.strictObject({
