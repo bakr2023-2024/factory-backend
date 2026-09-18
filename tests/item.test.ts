@@ -96,8 +96,9 @@ describe("GET /items/:id", () => {
   });
 
   it("should return item given valid id", async () => {
+    const id = createdItem.id
     const res: ItemResponse = await request(app).get(
-      `/items/${createdItem.id}`,
+      `/items/${id}`,
     );
 
     expect(res.status).toBe(200);
@@ -162,8 +163,9 @@ describe("PATCH /items/:id", () => {
   });
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
+    const id = createdItems[0].id
     const res: ItemResponse = await request(app)
-      .patch(`/items/${createdItems[0].id}`)
+      .patch(`/items/${id}`)
       .send({ name: newName });
 
     expect(res.status).toBe(200);
@@ -200,8 +202,9 @@ describe("PATCH /items/:id", () => {
   });
 
   it("should fail given duplicate name", async () => {
+    const id = createdItems[0].id
     const res: ErrorResponse = await request(app)
-      .patch(`/items/${createdItems[0].id}`)
+      .patch(`/items/${id}`)
       .send({ name: createdItems[1].name });
 
     expect(res.status).toBe(409);
@@ -220,17 +223,18 @@ describe("DELETE /items/:id", () => {
   });
 
   it("should delete successfully given valid id", async () => {
+    const id = createdItem.id
     const res: ItemResponse = await request(app).delete(
-      `/items/${createdItem.id}`,
+      `/items/${id}`,
     );
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(json({ data: createdItem }));
 
     const res2: ErrorResponse = await request(app).get(
-      `/items/${createdItem.id}`,
+      `/items/${id}`,
     );
-
+    
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Item not found");
   });
