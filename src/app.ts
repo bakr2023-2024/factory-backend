@@ -7,12 +7,16 @@ import { HttpException } from "./utils/exceptions";
 import authRouter from "./modules/auth/auth.route";
 import itemRouter from "./modules/item/item.route";
 import variantRouter from "./modules/variant/variant.route";
+import supplierRouter from "./modules/supplier/supplier.route";
+import customerRouter from "./modules/customer/customer.route";
 import { ErrorDetail } from "./utils/types/types";
 const app = express();
 app.use(express.json());
 app.use("/auth", authRouter);
 app.use("/items", itemRouter);
 app.use("/variants", variantRouter);
+app.use("/suppliers", supplierRouter);
+app.use("/customers", customerRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
