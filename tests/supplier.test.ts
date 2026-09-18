@@ -213,11 +213,9 @@ describe("PATCH /suppliers/:id", () => {
   });
   it("should fail given invalid name or invalid number", async () => {
     const res: ErrorResponse = await request(app)
-      .post("/suppliers")
+      .patch(`/suppliers/${createdSupplier.id}`)
       .send({ name: "sh", number: "07" });
 
-    expect(res.status).toBe(400);
-    expect(res.body.message).toBe("Validation Error");
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
     expect(res.body.cause).toEqual([
@@ -279,7 +277,6 @@ describe("DELETE /suppliers/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.supplier.deleteMany({});
   await prisma.supplier.deleteMany({});
   await prisma.$disconnect();
 });

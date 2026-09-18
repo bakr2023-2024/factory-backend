@@ -230,7 +230,7 @@ describe("PATCH /variants/:id", () => {
   });
   it("should fail given invalid itemId or invalid unitWeight", async () => {
     const res: ErrorResponse = await request(app)
-      .post("/variants")
+      .patch(`/variants/${createdVariant.id}`)
       .send({ itemId: -1, unitWeight: -1 });
 
     expect(res.status).toBe(400);
@@ -249,13 +249,13 @@ describe("PATCH /variants/:id", () => {
     ]);
   });
   it("should fail given non-existent itemId", async () => {
-    const id = createdItems[0].id;
+    const id = createdVariant.id;
     const res: ErrorResponse = await request(app)
       .patch(`/variants/${id}`)
       .send({ itemId: 99999999 });
 
-    expect(res.status).toBe(404);
-    expect(res.body.message).toBe("Variant not found");
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No item exists with that ID");
   });
 });
 

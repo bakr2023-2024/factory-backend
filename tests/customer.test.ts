@@ -213,7 +213,7 @@ describe("PATCH /customers/:id", () => {
   });
   it("should fail given invalid name or invalid number", async () => {
     const res: ErrorResponse = await request(app)
-      .post("/customers")
+      .patch(`/customers/${createdCustomer.id}`)
       .send({ name: "sh", number: "07" });
 
     expect(res.status).toBe(400);
@@ -279,7 +279,6 @@ describe("DELETE /customers/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.customer.deleteMany({});
   await prisma.customer.deleteMany({});
   await prisma.$disconnect();
 });
