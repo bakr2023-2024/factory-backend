@@ -9,6 +9,8 @@ import itemRouter from "./modules/item/item.route";
 import variantRouter from "./modules/variant/variant.route";
 import supplierRouter from "./modules/supplier/supplier.route";
 import customerRouter from "./modules/customer/customer.route";
+import importRouter from "./modules/import/import.route";
+import exportRouter from "./modules/export/export.route";
 import { ErrorDetail } from "./utils/types/types";
 const app = express();
 app.use(express.json());
@@ -17,6 +19,8 @@ app.use("/items", itemRouter);
 app.use("/variants", variantRouter);
 app.use("/suppliers", supplierRouter);
 app.use("/customers", customerRouter);
+app.use("/imports", importRouter);
+app.use("/exports", exportRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
