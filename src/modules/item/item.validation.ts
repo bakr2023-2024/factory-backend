@@ -1,9 +1,6 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
-export enum ItemType {
-  Product = "PRODUCT",
-  Material = "MATERIAL",
-}
+import { ItemType } from "../../db/generated/prisma/enums";
 
 export const paginateItems = {
   query: fields.paginate.extend({
