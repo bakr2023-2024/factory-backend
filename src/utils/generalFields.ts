@@ -22,7 +22,7 @@ export const fields = {
         message: "skip can only be a positive integer",
       })
       .transform((val) => Number(val))
-      .default(0),
+      .default(20),
   }),
 };
 export type paginateDTO = z.infer<typeof fields.paginate>;

@@ -1,3 +1,5 @@
+import { ErrorDetail } from "./types";
+
 export type DataResponse<T> = {
   status: number;
   body: { data: T };
@@ -14,5 +16,5 @@ export type PaginationResponse<T> = {
 };
 export type ErrorResponse = {
   status: number;
-  body: { message: string; cause?: unknown };
+  body: { message: string; cause?: ErrorDetail[] };
 };
