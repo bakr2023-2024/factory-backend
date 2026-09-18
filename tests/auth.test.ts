@@ -6,7 +6,10 @@ import app from "../src/app";
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
 import { verify } from "jsonwebtoken";
 import prisma from "../src/db/prisma";
-
+import { DataResponse, ErrorResponse } from "../src/utils/types/response.types";
+import { User } from "../src/db/generated/prisma/client";
+type SignupResponse = DataResponse<User>;
+type LoginResponse = DataResponse<string>;
 const mockUser = {
   username: "johnCena123",
   number: "07775000",
@@ -24,14 +27,17 @@ describe("POST /auth/signup", () => {
     await prisma.user.deleteMany({});
   });
   it("should complete successfully given unique name,number and matching password and confirmPassword", async () => {
-    const res = await request(app)
+    const res: SignupResponse = await request(app)
       .post("/auth/signup")
       .send({ ...mockUser, confirmPassword: mockUser.password });
     expect(res.status).toBe(201);
-    expect(res.body.message).toBe("Signed up successfully");
+    expect(res.body.data).toMatchObject({
+      username: mockUser.username,
+      number: mockUser.number,
+    });
   });
   it("should fail given duplicate name or number", async () => {
-    let res = await request(app)
+    let res: ErrorResponse = await request(app)
       .post("/auth/signup")
       .send({
         ...mockUser,
@@ -51,24 +57,33 @@ describe("POST /auth/signup", () => {
     expect(res.body.message).toBe("User with this name/number already exists");
   });
   it("should fail given mismatching password and confirmPassword", async () => {
-    const res = await request(app)
+    const res: ErrorResponse = await request(app)
       .post("/auth/signup")
       .send({ ...mockUser2, confirmPassword: "123abcABC" });
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
-    expect(res.body.cause.errors[0].issues[0].message).toBe(
-      "password and confirmPassword are mismatched",
-    );
+    expect(res.body.cause).toEqual([
+      {
+        key: "body",
+        message: "password and confirmPassword are mismatched",
+        path: ["confirmPassword"],
+      },
+    ]);
   });
   it("should fail given invalid password", async () => {
-    const res = await request(app)
+    const res: ErrorResponse = await request(app)
       .post("/auth/signup")
       .send({ ...mockUser2, password: "badpass", confirmPassword: "badpass" });
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
-    expect(res.body.cause.errors[0].issues[0].message).toBe(
-      "make sure that password at least contains 8 characters, contains a number, a lowercase letter and an uppercase letter",
-    );
+    expect(res.body.cause).toEqual([
+      {
+        key: "body",
+        message:
+          "make sure that password at least contains 8 characters, contains a number, a lowercase letter and an uppercase letter",
+        path: ["password"],
+      },
+    ]);
   });
 });
 
@@ -80,15 +95,14 @@ describe("POST /auth/login", () => {
       .send({ ...mockUser, confirmPassword: mockUser.password });
   });
   it("should complete successfully and respond with access token", async () => {
-    const res = await request(app)
+    const res: LoginResponse = await request(app)
       .post("/auth/login")
       .send({ username: mockUser.username, password: mockUser.password });
     expect(res.status).toBe(200);
-    expect(res.body.message).toBe("Logged in successfully");
-    expect(verify(res.body.token, process.env["JWT_SECRET"]!)).toBeTruthy();
+    expect(verify(res.body.data, process.env["JWT_SECRET"]!)).toBeTruthy();
   });
   it("should fail given invalid credentials", async () => {
-    const res = await request(app)
+    const res: ErrorResponse = await request(app)
       .post("/auth/login")
       .send({ username: mockUser.username, password: "password" });
     expect(res.status).toBe(400);

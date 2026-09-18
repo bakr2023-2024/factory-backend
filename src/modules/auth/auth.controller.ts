@@ -6,13 +6,13 @@ import { signToken } from "../../utils/security/token.security";
 
 export const signup = async (req: Request, res: Response) => {
   const userDTO: signupDTO = req.body;
-  await createUser(userDTO);
-  return res.status(201).json({ message: "Signed up successfully" });
+  const data = await createUser(userDTO);
+  return res.status(201).json({ data });
 };
 export const login = async (req: Request, res: Response) => {
   const userDTO: loginDTO = req.body;
   const user = await findUser(userDTO);
   if (!user) throw new BadRequestException("Invalid credentials");
-  const token = signToken({ id: user.id });
-  return res.json({ message: "Logged in successfully", token });
+  const data = signToken({ id: user.id });
+  return res.json({ data });
 };
