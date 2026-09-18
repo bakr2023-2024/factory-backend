@@ -9,7 +9,7 @@ export const paginateItems = {
 };
 export const getItem = {
   params: z.strictObject({
-    id: fields.id,
+    id: fields.idParam,
   }),
 };
 export const createItem = {
@@ -21,7 +21,7 @@ export const createItem = {
 };
 export const updateItem = {
   params: z.strictObject({
-    id: fields.id,
+    id: fields.idParam,
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +31,7 @@ export const updateItem = {
 };
 export const deleteItem = {
   params: z.strictObject({
-    id: fields.id,
+    id: fields.idParam,
   }),
 };
 

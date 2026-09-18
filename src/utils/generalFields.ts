@@ -10,7 +10,9 @@ const strToNum = (key: string) => {
 };
 
 export const fields = {
-  id: strToNum("ID"),
+  idParam: strToNum("ID"),
+  idBody: z.number().min(1,{message:"ID can only be a positive integer"}),
+  unitWeight:z.number().min(0.1,{message:"unit weight must be above 0"}).default(1),
   name: z.string().min(3).max(100),
   paginate: z.strictObject({
     page: strToNum("page").default(1),
