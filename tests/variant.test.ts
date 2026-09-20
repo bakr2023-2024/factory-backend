@@ -30,7 +30,7 @@ beforeAll(async () => {
   });
   mockVariants.push({ itemId: createdItems[0].id, unitWeight: 5 });
   mockVariants.push({ itemId: createdItems[0].id, unitWeight: 7 });
-  mockVariants.push({ itemId: createdItems[1].id, unitWeight: 5 });
+  mockVariants.push({ itemId: createdItems[1].id, unitWeight: 3 });
 });
 describe("GET /variants", () => {
   let createdVariants: Variant[] = [];
@@ -74,27 +74,41 @@ describe("GET /variants", () => {
     );
   });
 
-  it("should return all variants that relate to queried name or item id", async () => {
+  it("should return all variants that relate to queried name", async () => {
     const res: PaginatedVariantsResponse = await request(app).get(
-      "/variants?name=Fruit%20Tofu",
+      "/variants?itemName=Fruit%20Tofu",
     );
     const filtered = createdVariants.filter(
       (variant) => variant.itemId === createdItems[0].id,
     );
-    const expectedRes = json({
-      data: filtered,
-      page: 1,
-      size: 20,
-      totalPages: 1,
-      totalCount: filtered.length,
-    });
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(expectedRes);
-    const res2: PaginatedVariantsResponse = await request(app).get(
-      `/variants?itemId=${createdItems[0].id}`,
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: 1,
+        totalCount: filtered.length,
+      }),
     );
-    expect(res2.status).toBe(200);
-    expect(res2.body).toEqual(expectedRes);
+  });
+  it("should return all variants sorted according to sortBy and order", async () => {
+    const res: PaginatedVariantsResponse = await request(app).get(
+      "/variants?sortBy=unitWeight&order=desc",
+    );
+    const sorted = createdVariants.toSorted((a, b) =>
+      b.unitWeight.comparedTo(a.unitWeight),
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: sorted,
+        page: 1,
+        size: 20,
+        totalPages: 1,
+        totalCount: sorted.length,
+      }),
+    );
   });
 });
 

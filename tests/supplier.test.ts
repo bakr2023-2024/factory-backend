@@ -87,6 +87,24 @@ describe("GET /suppliers", () => {
     expect(res2.status).toBe(200);
     expect(res2.body).toEqual(expectedRes);
   });
+    it("should return all suppliers sorted according to sortBy and order", async () => {
+      const res: PaginatedSuppliersResponse = await request(app).get(
+        "/suppliers?sortBy=name&order=desc",
+      );
+      const sorted = createdSuppliers.toSorted((a, b) =>
+        b.name.localeCompare(a.name),
+      );
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(
+        json({
+          data: sorted,
+          page: 1,
+          size: 20,
+          totalPages: 1,
+          totalCount: sorted.length,
+        }),
+      );
+    });
 });
 
 describe("GET /suppliers/:id", () => {

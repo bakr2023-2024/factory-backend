@@ -122,6 +122,24 @@ describe("GET /imports", () => {
       }),
     );
   });
+  it("should return all imports sorted according to sortBy and order", async () => {
+    const res: PaginatedImportsResponse = await request(app).get(
+      "/imports?sortBy=createdAt&order=desc",
+    );
+    const sorted = createdImports.toSorted(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: sorted,
+        page: 1,
+        size: 20,
+        totalPages: 1,
+        totalCount: sorted.length,
+      }),
+    );
+  });
 });
 
 describe("GET /imports/:id", () => {
