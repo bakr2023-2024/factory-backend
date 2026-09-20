@@ -129,7 +129,7 @@ model ImportItem {
   importId  Int
   variantId Int
   quantity  Int
-  unitPrice Int?
+  unitPrice Decimal  @default(1) @db.Decimal(9, 3)
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -175,7 +175,7 @@ model ExportItem {
   exportId  Int
   variantId Int
   quantity  Int
-  unitPrice Int?
+  unitPrice Decimal  @default(1) @db.Decimal(9, 3)
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
