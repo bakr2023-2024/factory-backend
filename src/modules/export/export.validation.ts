@@ -2,10 +2,10 @@ import z from "zod";
 import { fields } from "../../utils/generalFields";
 
 export const paginateExports = {
-  query: fields.paginate.extend({
+  query: fields.paginate("Export").extend({
     customerId: fields.idParam.optional(),
-    createdFrom: z.iso.datetime().optional(),
-    createdTo: z.iso.datetime().optional(),
+    customerName: fields.name.optional(),
+    customerNumber:fields.number.optional()
   }),
 };
 export const getExport = {

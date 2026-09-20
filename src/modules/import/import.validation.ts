@@ -2,10 +2,10 @@ import z from "zod";
 import { fields } from "../../utils/generalFields";
 
 export const paginateImports = {
-  query: fields.paginate.extend({
+  query: fields.paginate("Import").extend({
     supplierId: fields.idParam.optional(),
-    createdFrom: z.iso.datetime().optional(),
-    createdTo: z.iso.datetime().optional(),
+    supplierName: fields.name.optional(),
+    supplierNumber:fields.number.optional()
   }),
 };
 export const getImport = {

@@ -2,9 +2,9 @@ import z from "zod";
 import { fields } from "../../utils/generalFields";
 
 export const paginateVariants = {
-  query: fields.paginate.extend({
+  query: fields.paginate("Variant").extend({
     itemId: fields.idParam.optional(),
-    name: fields.name.optional(),
+    itemName: fields.name.optional(),
   }),
 };
 export const getVariant = {

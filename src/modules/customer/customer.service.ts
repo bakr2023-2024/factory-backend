@@ -1,5 +1,8 @@
 import { Customer, Prisma } from "../../db/generated/prisma/client";
-import { CustomerWhereInput } from "../../db/generated/prisma/models";
+import {
+  CustomerFindManyArgs,
+  CustomerWhereInput,
+} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -7,6 +10,7 @@ import {
   NotFoundException,
 } from "../../utils/exceptions";
 import { PaginationType } from "../../utils/types/types";
+import { buildQuery } from "../../utils/utils";
 import {
   createCustomerBodyDTO,
   deleteCustomerParamsDTO,
@@ -20,15 +24,16 @@ export const getCustomers = async (
   pagination: paginateCustomersDTO,
 ): Promise<PaginationType<Customer[]>> => {
   const { page, size } = pagination;
+  const query: CustomerFindManyArgs = {};
   const where: CustomerWhereInput = {};
+  const orderBy: Prisma.CustomerOrderByWithRelationInput = {};
+  buildQuery(pagination, query, where, orderBy);
+
   if (pagination.name)
     where.name = { contains: pagination.name, mode: "insensitive" };
-  if (pagination.number) where.number = pagination.number;
-  const query = {
-    skip: (page - 1) * pagination.size,
-    take: size,
-    where,
-  };
+  if (pagination.number)
+    where.number = { contains: pagination.number, mode: "insensitive" };
+
   const data = await prisma.customer.findMany(query);
   const totalCount = await prisma.customer.count({ where });
   const totalPages = Math.ceil(totalCount / size);

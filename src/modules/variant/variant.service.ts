@@ -1,5 +1,8 @@
 import { Variant, Prisma } from "../../db/generated/prisma/client";
-import { VariantWhereInput } from "../../db/generated/prisma/models";
+import {
+  VariantFindManyArgs,
+  VariantWhereInput,
+} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -7,6 +10,7 @@ import {
   NotFoundException,
 } from "../../utils/exceptions";
 import { PaginationType } from "../../utils/types/types";
+import { buildQuery } from "../../utils/utils";
 import {
   createVariantBodyDTO,
   deleteVariantParamsDTO,
@@ -20,15 +24,17 @@ export const getVariants = async (
   pagination: paginateVariantsDTO,
 ): Promise<PaginationType<Variant[]>> => {
   const { page, size } = pagination;
+  const query: VariantFindManyArgs = {};
   const where: VariantWhereInput = {};
-  if (pagination.name)
-    where.item = { name: { contains: pagination.name, mode: "insensitive" } };
+  const orderBy: Prisma.VariantOrderByWithRelationInput = {};
+  buildQuery(pagination, query, where, orderBy);
+
   if (pagination.itemId) where.itemId = pagination.itemId;
-  const query = {
-    skip: (page - 1) * pagination.size,
-    take: size,
-    where,
-  };
+  if (pagination.itemName)
+    where.item = {
+      name: { contains: pagination.itemName, mode: "insensitive" },
+    };
+  
   const data = await prisma.variant.findMany(query);
   const totalCount = await prisma.variant.count({ where });
   const totalPages = Math.ceil(totalCount / size);

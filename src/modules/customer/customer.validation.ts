@@ -2,7 +2,7 @@ import z from "zod";
 import { fields } from "../../utils/generalFields";
 
 export const paginateCustomers = {
-  query: fields.paginate.extend({
+  query: fields.paginate("Customer").extend({
     name: fields.name.optional(),
     number: fields.number.optional(),
   }),

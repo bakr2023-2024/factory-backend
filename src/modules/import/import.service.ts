@@ -1,5 +1,8 @@
 import { Import, Prisma } from "../../db/generated/prisma/client";
-import { ImportWhereInput } from "../../db/generated/prisma/models";
+import {
+  ImportFindManyArgs,
+  ImportWhereInput,
+} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -7,6 +10,7 @@ import {
   NotFoundException,
 } from "../../utils/exceptions";
 import { PaginationType } from "../../utils/types/types";
+import { buildQuery } from "../../utils/utils";
 import {
   createImportBodyDTO,
   deleteImportParamsDTO,
@@ -20,15 +24,27 @@ export const getImports = async (
   pagination: paginateImportsDTO,
 ): Promise<PaginationType<Import[]>> => {
   const { page, size } = pagination;
+  const query: ImportFindManyArgs = {};
   const where: ImportWhereInput = {};
+  const orderBy: Prisma.ImportOrderByWithRelationInput = {};
+
   if (pagination.supplierId) where.supplierId = pagination.supplierId;
-  if (pagination.createdFrom && pagination.createdTo)
-    where.createdAt = { gte: pagination.createdFrom, lt: pagination.createdTo };
-  const query = {
-    skip: (page - 1) * pagination.size,
-    take: size,
-    where,
-  };
+  if (pagination.supplierName)
+    where.supplier = {
+      name: {
+        contains: pagination.supplierName,
+        mode: "insensitive",
+      },
+    };
+  if (pagination.supplierNumber)
+    where.supplier = {
+      number: {
+        contains: pagination.supplierNumber,
+        mode: "insensitive",
+      },
+    };
+  buildQuery(pagination, query, where, orderBy);
+
   const data = await prisma.import.findMany(query);
   const totalCount = await prisma.import.count({ where });
   const totalPages = Math.ceil(totalCount / size);

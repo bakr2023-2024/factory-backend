@@ -3,7 +3,7 @@ import { fields } from "../../utils/generalFields";
 import { ItemType } from "../../db/generated/prisma/enums";
 
 export const paginateItems = {
-  query: fields.paginate.extend({
+  query: fields.paginate("Item").extend({
     name: fields.name.optional(),
   }),
 };
