@@ -14,8 +14,7 @@ export const fields = {
     .number()
     .int()
     .min(1, { message: "ID can only be a positive integer" }),
-  date: z.iso.date(),
-  dateTime: z.iso.datetime(),
+  dateTime: z.iso.datetime({ message: "Invalid DateTime" }),
   unitWeight: z
     .number()
     .min(0.1, { message: "unit weight must be above 0" })
@@ -72,8 +71,10 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   ),
   User: [],
   StockMovement: [],
-  Season: [],
-  Week: [],
+  Season: Object.values(Prisma.SeasonScalarFieldEnum),
+  Week: Object.values(Prisma.WeekScalarFieldEnum).filter(
+    (key) => !["seasonId"].includes(key),
+  ),
   ProductionDay: [],
   ProductionEntry: [],
   ProductionBatch: [],
