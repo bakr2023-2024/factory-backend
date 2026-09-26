@@ -117,6 +117,7 @@ model Import {
   id         Int      @id @default(autoincrement())
   supplierId Int
   notes      String?
+  occurredAt DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -163,6 +164,7 @@ model Export {
   id         Int      @id @default(autoincrement())
   customerId Int
   notes      String?
+  occurredAt DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
