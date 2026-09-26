@@ -13,6 +13,8 @@ import importRouter from "./modules/import/import.route";
 import exportRouter from "./modules/export/export.route";
 import importItemRouter from "./modules/importItem/importItem.route";
 import exportItemRouter from "./modules/exportItem/exportItem.route";
+import seasonRouter from "./modules/season/season.route";
+import weekRouter from "./modules/week/week.route";
 import { ErrorDetail } from "./utils/types/types";
 const app = express();
 app.use(express.json());
@@ -25,6 +27,8 @@ app.use("/imports", importRouter);
 app.use("/exports", exportRouter);
 app.use("/importItems", importItemRouter);
 app.use("/exportItems", exportItemRouter);
+app.use("/seasons", seasonRouter);
+app.use("/weeks", weekRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
