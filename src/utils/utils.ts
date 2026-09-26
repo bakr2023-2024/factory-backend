@@ -63,6 +63,7 @@ export const buildQuery = (
   if (pagination.createdTo) createdAt.lte = pagination.createdTo;
   if (pagination.createdFrom || pagination.createdTo)
     where.createdAt = createdAt;
+  
   query.skip = (page - 1) * pagination.size;
   query.take = size;
   query.where = where;

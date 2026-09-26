@@ -43,6 +43,14 @@ export const getExports = async (
         mode: "insensitive",
       },
     };
+  const occurredAt: Prisma.DateTimeFilter = {};
+  if (pagination.sortBy && pagination.sortBy == "occurredAt")
+    orderBy.occurredAt = pagination.order;
+  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
+  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
+  if (pagination.occurredFrom || pagination.occurredTo)
+    where.occurredAt = occurredAt;
+
   buildQuery(pagination, query, where, orderBy);
 
   const data = await prisma.export.findMany(query);

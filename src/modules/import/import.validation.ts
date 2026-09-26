@@ -5,7 +5,9 @@ export const paginateImports = {
   query: fields.paginate("Import").extend({
     supplierId: fields.idParam.optional(),
     supplierName: fields.name.optional(),
-    supplierNumber:fields.number.optional()
+    supplierNumber: fields.number.optional(),
+    occurredFrom: fields.dateTime.optional(),
+    occurredTo: fields.dateTime.optional(),
   }),
 };
 export const getImport = {
@@ -16,6 +18,7 @@ export const getImport = {
 export const createImport = {
   body: z.strictObject({
     supplierId: fields.idBody,
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };

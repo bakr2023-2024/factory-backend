@@ -22,7 +22,7 @@ const mockCustomers = [
   { name: "cm punk", number: "08886000" },
   { name: "brock lesner", number: "09997000" },
 ];
-let mockExports: { customerId: number; createdAt: Date }[] = [];
+let mockExports: { customerId: number; occurredAt: Date }[] = [];
 let createdCustomers: Customer[];
 beforeAll(async () => {
   createdCustomers = await prisma.customer.createManyAndReturn({
@@ -30,15 +30,15 @@ beforeAll(async () => {
   });
   mockExports.push({
     customerId: createdCustomers[0].id,
-    createdAt: new Date("2026-09-12T10:00:00Z"),
+    occurredAt: new Date("2026-09-12T10:00:00Z"),
   });
   mockExports.push({
     customerId: createdCustomers[0].id,
-    createdAt: new Date("2026-09-16T15:00:00Z"),
+    occurredAt: new Date("2026-09-16T15:00:00Z"),
   });
   mockExports.push({
     customerId: createdCustomers[1].id,
-    createdAt: new Date("2026-09-14T20:00:00Z"),
+    occurredAt: new Date("2026-09-14T20:00:00Z"),
   });
 });
 describe("GET /exports", () => {
@@ -101,15 +101,15 @@ describe("GET /exports", () => {
       }),
     );
   });
-  it("should return all exports that were created between createdFrom and createdTo", async () => {
+  it("should return all exports that occurred between occurredFrom and occurredTo", async () => {
     const start = "2026-09-12T00:00:00Z";
     const end = "2026-09-15T00:00:00Z";
     const res: PaginatedExportsResponse = await request(app).get(
-      `/exports?createdFrom=${start}&createdTo=${end}`,
+      `/exports?occurredFrom=${start}&occurredTo=${end}`,
     );
     const filtered = createdExports.filter(
-      ({ createdAt }) =>
-        createdAt.toISOString() >= start && createdAt.toISOString() < end,
+      ({ occurredAt }) =>
+        occurredAt.toISOString() >= start && occurredAt.toISOString() < end,
     );
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -124,10 +124,10 @@ describe("GET /exports", () => {
   });
     it("should return all exports sorted according to sortBy and order", async () => {
       const res: PaginatedExportsResponse = await request(app).get(
-        "/exports?sortBy=createdAt&order=desc",
+        "/exports?sortBy=occurredAt&order=desc",
       );
       const sorted = createdExports.toSorted(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+        (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
       );
       expect(res.status).toBe(200);
       expect(res.body).toEqual(

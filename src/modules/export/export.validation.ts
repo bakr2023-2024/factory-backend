@@ -5,7 +5,9 @@ export const paginateExports = {
   query: fields.paginate("Export").extend({
     customerId: fields.idParam.optional(),
     customerName: fields.name.optional(),
-    customerNumber:fields.number.optional()
+    customerNumber: fields.number.optional(),
+    occurredFrom: fields.dateTime.optional(),
+    occurredTo: fields.dateTime.optional(),
   }),
 };
 export const getExport = {
@@ -16,6 +18,7 @@ export const getExport = {
 export const createExport = {
   body: z.strictObject({
     customerId: fields.idBody,
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };

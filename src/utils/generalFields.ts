@@ -14,6 +14,8 @@ export const fields = {
     .number()
     .int()
     .min(1, { message: "ID can only be a positive integer" }),
+  date: z.iso.date(),
+  dateTime: z.iso.datetime(),
   unitWeight: z
     .number()
     .min(0.1, { message: "unit weight must be above 0" })
@@ -26,8 +28,13 @@ export const fields = {
     .string()
     .min(5, { message: "Number is too short" })
     .max(40, { message: "Number is too long" }),
-  quantity: z.number().int().min(1,{message:"quantity can only be a positive integer"}),
-  unitPriceBody: z.number().min(0.01,{message:"price can only be a positive number"}),
+  quantity: z
+    .number()
+    .int()
+    .min(1, { message: "quantity can only be a positive integer" }),
+  unitPriceBody: z
+    .number()
+    .min(0.01, { message: "price can only be a positive number" }),
   unitPriceParam: strToNum("price can only be a positive number"),
   paginate: (table: Prisma.ModelName) =>
     z.strictObject({
