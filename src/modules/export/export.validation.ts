@@ -28,6 +28,7 @@ export const updateExport = {
   }),
   body: z.strictObject({
     customerId: fields.idBody.optional(),
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };

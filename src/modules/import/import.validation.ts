@@ -28,6 +28,7 @@ export const updateImport = {
   }),
   body: z.strictObject({
     supplierId: fields.idBody.optional(),
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
