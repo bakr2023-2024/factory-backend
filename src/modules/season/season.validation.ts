@@ -4,10 +4,10 @@ import { fields } from "../../utils/generalFields";
 export const paginateSeasons = {
   query: fields.paginate("Season").extend({
     name: fields.name.optional(),
-    startedFrom: fields.dateTime.optional(),
-    startedTo: fields.dateTime.optional(),
-    endedFrom: fields.dateTime.optional(),
-    endedTo: fields.dateTime.optional(),
+    startedFrom: fields.date.optional(),
+    startedTo: fields.date.optional(),
+    endedFrom: fields.date.optional(),
+    endedTo: fields.date.optional(),
   }),
 };
 export const getSeason = {
@@ -17,8 +17,8 @@ export const getSeason = {
 };
 export const createSeason = {
   body: z.strictObject({
-    startDate: fields.dateTime.optional(),
-    endDate: fields.dateTime.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
     name: fields.name.optional(),
     notes: z.string().optional(),
   }),
@@ -28,8 +28,8 @@ export const updateSeason = {
     id: fields.idParam,
   }),
   body: z.strictObject({
-    startDate: fields.dateTime.optional(),
-    endDate: fields.dateTime.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
     name: fields.name.optional(),
     notes: z.string().optional(),
   }),

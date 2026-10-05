@@ -14,6 +14,9 @@ export const fields = {
     .number()
     .int()
     .min(1, { message: "ID can only be a positive integer" }),
+  date: z.iso
+    .date({ message: "Invalid Date" })
+    .transform((s) => new Date(`${s}T00:00:00.000Z`)),
   dateTime: z.iso.datetime({ message: "Invalid DateTime" }),
   unitWeight: z
     .number()
@@ -48,34 +51,22 @@ export const fields = {
 
 const sortFields: Record<Prisma.ModelName, string[]> = {
   Item: Object.values(Prisma.ItemScalarFieldEnum),
-  Variant: Object.values(Prisma.VariantScalarFieldEnum).filter(
-    (key) => key !== "itemId",
-  ),
+  Variant: Object.values(Prisma.VariantScalarFieldEnum),
   Supplier: Object.values(Prisma.SupplierScalarFieldEnum).filter(
     (key) => key !== "number",
   ),
   Customer: Object.values(Prisma.CustomerScalarFieldEnum).filter(
     (key) => key !== "number",
   ),
-  Import: Object.values(Prisma.ImportScalarFieldEnum).filter(
-    (key) => key != "supplierId",
-  ),
-  Export: Object.values(Prisma.ExportScalarFieldEnum).filter(
-    (key) => key != "customerId",
-  ),
-  ImportItem: Object.values(Prisma.ImportItemScalarFieldEnum).filter(
-    (key) => !["supplierId", "variantId"].includes(key),
-  ),
-  ExportItem: Object.values(Prisma.ExportItemScalarFieldEnum).filter(
-    (key) => !["customerId", "variantId"].includes(key),
-  ),
+  Import: Object.values(Prisma.ImportScalarFieldEnum),
+  Export: Object.values(Prisma.ExportScalarFieldEnum),
+  ImportItem: Object.values(Prisma.ImportItemScalarFieldEnum),
+  ExportItem: Object.values(Prisma.ExportItemScalarFieldEnum),
   User: [],
   StockMovement: [],
   Season: Object.values(Prisma.SeasonScalarFieldEnum),
-  Week: Object.values(Prisma.WeekScalarFieldEnum).filter(
-    (key) => !["seasonId"].includes(key),
-  ),
-  ProductionDay: [],
+  Week: Object.values(Prisma.WeekScalarFieldEnum),
+  ProductionDay: Object.values(Prisma.ProductionDayScalarFieldEnum),
   ProductionEntry: [],
   ProductionBatch: [],
   Consumption: [],

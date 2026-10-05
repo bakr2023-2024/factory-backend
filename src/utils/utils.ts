@@ -5,6 +5,7 @@ import { paginateExportItemsDTO } from "../modules/exportItem/exportItem.validat
 import { paginateImportsDTO } from "../modules/import/import.validation";
 import { paginateImportItemsDTO } from "../modules/importItem/importItem.validation";
 import { paginateItemsDTO } from "../modules/item/item.validation";
+import { paginateProductionDaysDTO } from "../modules/productionDay/productionDay.validation";
 import { paginateSeasonsDTO } from "../modules/season/season.validation";
 import { paginateSuppliersDTO } from "../modules/supplier/supplier.validation";
 import { paginateVariantsDTO } from "../modules/variant/variant.validation";
@@ -20,7 +21,8 @@ type Query =
   | Prisma.ImportItemFindManyArgs
   | Prisma.ExportItemFindManyArgs
   | Prisma.SeasonFindManyArgs
-  | Prisma.WeekFindManyArgs;
+  | Prisma.WeekFindManyArgs
+  | Prisma.ProductionDayFindManyArgs;
 
 type Where =
   | Prisma.ItemWhereInput
@@ -32,7 +34,8 @@ type Where =
   | Prisma.ImportItemWhereInput
   | Prisma.ExportItemWhereInput
   | Prisma.SeasonWhereInput
-  | Prisma.WeekWhereInput;
+  | Prisma.WeekWhereInput
+  | Prisma.ProductionDayWhereInput;
 
 type OrderBy =
   | Prisma.ItemOrderByWithRelationInput
@@ -44,7 +47,8 @@ type OrderBy =
   | Prisma.ImportItemOrderByWithRelationInput
   | Prisma.ExportItemOrderByWithRelationInput
   | Prisma.SeasonOrderByWithRelationInput
-  | Prisma.WeekOrderByWithRelationInput;
+  | Prisma.WeekOrderByWithRelationInput
+  | Prisma.ProductionDayOrderByWithRelationInput;
 
 type Pagination =
   | paginateItemsDTO
@@ -56,7 +60,8 @@ type Pagination =
   | paginateImportItemsDTO
   | paginateExportItemsDTO
   | paginateSeasonsDTO
-  | paginateWeeksDTO;
+  | paginateWeeksDTO
+  | paginateProductionDaysDTO;
 
 export const buildQuery = (
   pagination: Pagination,

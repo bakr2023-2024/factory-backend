@@ -5,10 +5,10 @@ export const paginateWeeks = {
   query: fields.paginate("Week").extend({
     seasonName: fields.name.optional(),
     seasonId: fields.idParam.optional(),
-    startedFrom: fields.dateTime.optional(),
-    startedTo: fields.dateTime.optional(),
-    endedFrom: fields.dateTime.optional(),
-    endedTo: fields.dateTime.optional(),
+    startedFrom: fields.date.optional(),
+    startedTo: fields.date.optional(),
+    endedFrom: fields.date.optional(),
+    endedTo: fields.date.optional(),
   }),
 };
 export const getWeek = {
@@ -19,8 +19,8 @@ export const getWeek = {
 export const createWeek = {
   body: z.strictObject({
     seasonId: fields.idBody,
-    startDate: fields.dateTime.optional(),
-    endDate: fields.dateTime.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
     notes: z.string().optional(),
   }),
 };
@@ -30,8 +30,8 @@ export const updateWeek = {
   }),
   body: z.strictObject({
     seasonId: fields.idBody.optional(),
-    startDate: fields.dateTime.optional(),
-    endDate: fields.dateTime.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
     notes: z.string().optional(),
   }),
 };
