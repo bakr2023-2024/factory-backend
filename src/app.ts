@@ -15,6 +15,7 @@ import importItemRouter from "./modules/importItem/importItem.route";
 import exportItemRouter from "./modules/exportItem/exportItem.route";
 import seasonRouter from "./modules/season/season.route";
 import weekRouter from "./modules/week/week.route";
+import productionDayRouter from "./modules/productionDay/productionDay.route";
 import { ErrorDetail } from "./utils/types/types";
 import { authentication } from "./middleware/auth.middleware";
 const app = express();
@@ -30,6 +31,7 @@ app.use("/importItems", authentication, importItemRouter);
 app.use("/exportItems", authentication, exportItemRouter);
 app.use("/seasons", authentication, seasonRouter);
 app.use("/weeks", authentication, weekRouter);
+app.use("/productionDays", authentication, productionDayRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
