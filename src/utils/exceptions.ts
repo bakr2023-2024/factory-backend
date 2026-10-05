@@ -27,6 +27,16 @@ export class NotFoundException extends HttpException {
     super(message, 404, cause);
   }
 }
+export class UnauthorizedException extends HttpException {
+  constructor(message: string, cause?: ErrorDetail[]) {
+    super(message, 401, cause);
+  }
+}
+export class ForbiddenException extends HttpException {
+  constructor(message: string, cause?: ErrorDetail[]) {
+    super(message, 403, cause);
+  }
+}
 export class InternalServerException extends HttpException {
   constructor(message: string, cause?: ErrorDetail[]) {
     super(message, 500, cause);

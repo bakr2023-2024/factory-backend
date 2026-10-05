@@ -10,12 +10,11 @@ import {
 } from "../src/utils/types/response.types";
 import request from "supertest";
 import app from "../src/app";
+import { json, login, auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 
 type ImportResponse = DataResponse<Import>;
 type PaginatedImportsResponse = PaginationResponse<Import[]>;
-
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
 
 const mockSuppliers = [
   { name: "john cena", number: "07775000" },
@@ -25,6 +24,7 @@ const mockSuppliers = [
 let mockImports: { supplierId: number; occurredAt: Date }[] = [];
 let createdSuppliers: Supplier[];
 beforeAll(async () => {
+  await login();
   createdSuppliers = await prisma.supplier.createManyAndReturn({
     data: mockSuppliers,
   });
@@ -52,7 +52,7 @@ describe("GET /imports", () => {
   });
 
   it("should return all imports", async () => {
-    const res: PaginatedImportsResponse = await request(app).get("/imports");
+    const res: PaginatedImportsResponse = await auth().get("/imports");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -67,7 +67,7 @@ describe("GET /imports", () => {
   });
 
   it("should return paginated imports given page and size", async () => {
-    const res: PaginatedImportsResponse = await request(app).get(
+    const res: PaginatedImportsResponse = await auth().get(
       "/imports?page=2&size=2",
     );
 
@@ -84,7 +84,7 @@ describe("GET /imports", () => {
   });
 
   it("should return all imports that relate to supplierId", async () => {
-    const res: PaginatedImportsResponse = await request(app).get(
+    const res: PaginatedImportsResponse = await auth().get(
       `/imports?supplierId=${createdSuppliers[0].id}`,
     );
     const filtered = createdImports.filter(
@@ -104,7 +104,7 @@ describe("GET /imports", () => {
   it("should return all imports that occurred between occurredFrom and occurredTo", async () => {
     const start = "2026-09-12T00:00:00Z";
     const end = "2026-09-15T00:00:00Z";
-    const res: PaginatedImportsResponse = await request(app).get(
+    const res: PaginatedImportsResponse = await auth().get(
       `/imports?occurredFrom=${start}&occurredTo=${end}`,
     );
     const filtered = createdImports.filter(
@@ -123,7 +123,7 @@ describe("GET /imports", () => {
     );
   });
   it("should return all imports sorted according to sortBy and order", async () => {
-    const res: PaginatedImportsResponse = await request(app).get(
+    const res: PaginatedImportsResponse = await auth().get(
       "/imports?sortBy=occurredAt&order=desc",
     );
     const sorted = createdImports.toSorted(
@@ -152,14 +152,14 @@ describe("GET /imports/:id", () => {
 
   it("should return import given valid id", async () => {
     const id = createdImport.id;
-    const res: ImportResponse = await request(app).get(`/imports/${id}`);
+    const res: ImportResponse = await auth().get(`/imports/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdImport) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/imports/badId");
+    const res: ErrorResponse = await auth().get("/imports/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -173,7 +173,7 @@ describe("GET /imports/:id", () => {
   });
 
   it("should fail if import isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/imports/999999999");
+    const res: ErrorResponse = await auth().get("/imports/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Import not found");
@@ -186,7 +186,7 @@ describe("POST /imports", () => {
   });
 
   it("should create import successfully given supplierId", async () => {
-    const res: ImportResponse = await request(app)
+    const res: ImportResponse = await auth()
       .post("/imports")
       .send({ supplierId: mockImports[0].supplierId });
 
@@ -197,7 +197,7 @@ describe("POST /imports", () => {
   });
 
   it("should fail given invalid supplierId", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/imports")
       .send({ supplierId: -1 });
 
@@ -212,7 +212,7 @@ describe("POST /imports", () => {
     ]);
   });
   it("should fail given non-existent supplierId", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/imports")
       .send({ supplierId: 99999999 });
     expect(res.status).toBe(409);
@@ -229,7 +229,7 @@ describe("PATCH /imports/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdImport.id;
-    const res: ImportResponse = await request(app)
+    const res: ImportResponse = await auth()
       .patch(`/imports/${id}`)
       .send({ supplierId: mockImports[1].supplierId });
 
@@ -246,7 +246,7 @@ describe("PATCH /imports/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/imports/badId")
       .send({ supplierId: mockImports[2].supplierId });
 
@@ -261,7 +261,7 @@ describe("PATCH /imports/:id", () => {
     ]);
   });
   it("should fail if import isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/imports/99999999")
       .send({ supplierId: mockImports[0].supplierId });
 
@@ -269,7 +269,7 @@ describe("PATCH /imports/:id", () => {
     expect(res.body.message).toBe("Import not found");
   });
   it("should fail given invalid supplierId", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/imports/${createdImport.id}`)
       .send({ supplierId: -1 });
 
@@ -285,7 +285,7 @@ describe("PATCH /imports/:id", () => {
   });
   it("should fail given non-existent supplier", async () => {
     const id = createdImport.id;
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/imports/${id}`)
       .send({ supplierId: 99999999 });
 
@@ -304,19 +304,19 @@ describe("DELETE /imports/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdImport.id;
-    const res: ImportResponse = await request(app).delete(`/imports/${id}`);
+    const res: ImportResponse = await auth().delete(`/imports/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdImport) });
 
-    const res2: ErrorResponse = await request(app).get(`/imports/${id}`);
+    const res2: ErrorResponse = await auth().get(`/imports/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Import not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/imports/badId");
+    const res: ErrorResponse = await auth().delete("/imports/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -330,7 +330,7 @@ describe("DELETE /imports/:id", () => {
   });
 
   it("should fail if import isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/imports/99999999");
+    const res: ErrorResponse = await auth().delete("/imports/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Import not found");

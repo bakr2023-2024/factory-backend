@@ -8,14 +8,11 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
+import { json, login, auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 
 type VariantResponse = DataResponse<Variant>;
 type PaginatedVariantsResponse = PaginationResponse<Variant[]>;
-
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
 
 const mockItems = [
   { name: "Fruit Tofu", type: ItemType.PRODUCT },
@@ -25,6 +22,7 @@ const mockItems = [
 let mockVariants: { itemId: number; unitWeight: number }[] = [];
 let createdItems: Item[];
 beforeAll(async () => {
+  await login();
   createdItems = await prisma.item.createManyAndReturn({
     data: mockItems,
   });
@@ -43,7 +41,7 @@ describe("GET /variants", () => {
   });
 
   it("should return all variants", async () => {
-    const res: PaginatedVariantsResponse = await request(app).get("/variants");
+    const res: PaginatedVariantsResponse = await auth().get("/variants");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -58,7 +56,7 @@ describe("GET /variants", () => {
   });
 
   it("should return paginated variants given page and size", async () => {
-    const res: PaginatedVariantsResponse = await request(app).get(
+    const res: PaginatedVariantsResponse = await auth().get(
       "/variants?page=2&size=2",
     );
 
@@ -75,7 +73,7 @@ describe("GET /variants", () => {
   });
 
   it("should return all variants that relate to queried name", async () => {
-    const res: PaginatedVariantsResponse = await request(app).get(
+    const res: PaginatedVariantsResponse = await auth().get(
       "/variants?itemName=Fruit%20Tofu",
     );
     const filtered = createdVariants.filter(
@@ -93,7 +91,7 @@ describe("GET /variants", () => {
     );
   });
   it("should return all variants sorted according to sortBy and order", async () => {
-    const res: PaginatedVariantsResponse = await request(app).get(
+    const res: PaginatedVariantsResponse = await auth().get(
       "/variants?sortBy=unitWeight&order=desc",
     );
     const sorted = createdVariants.toSorted((a, b) =>
@@ -122,14 +120,14 @@ describe("GET /variants/:id", () => {
 
   it("should return variant given valid id", async () => {
     const id = createdVariant.id;
-    const res: VariantResponse = await request(app).get(`/variants/${id}`);
+    const res: VariantResponse = await auth().get(`/variants/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdVariant) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/variants/badId");
+    const res: ErrorResponse = await auth().get("/variants/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -143,7 +141,7 @@ describe("GET /variants/:id", () => {
   });
 
   it("should fail if variant isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/variants/999999999");
+    const res: ErrorResponse = await auth().get("/variants/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Variant not found");
@@ -156,7 +154,7 @@ describe("POST /variants", () => {
   });
 
   it("should create variant successfully given itemId and unitWeight", async () => {
-    const res: VariantResponse = await request(app)
+    const res: VariantResponse = await auth()
       .post("/variants")
       .send(mockVariants[0]);
 
@@ -165,7 +163,7 @@ describe("POST /variants", () => {
   });
 
   it("should fail given invalid itemId or invalid unitWeight", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/variants")
       .send({ itemId: -1, unitWeight: -1 });
 
@@ -185,7 +183,7 @@ describe("POST /variants", () => {
     ]);
   });
   it("should fail given non-existent itemId", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/variants")
       .send({ itemId: 99999999, unitWeight: 1 });
     expect(res.status).toBe(409);
@@ -202,7 +200,7 @@ describe("PATCH /variants/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdVariant.id;
-    const res: VariantResponse = await request(app)
+    const res: VariantResponse = await auth()
       .patch(`/variants/${id}`)
       .send({ itemId: createdItems[1].id, unitWeight: 10 });
 
@@ -220,7 +218,7 @@ describe("PATCH /variants/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/variants/badId")
       .send({ unitWeight: 7 });
 
@@ -235,7 +233,7 @@ describe("PATCH /variants/:id", () => {
     ]);
   });
   it("should fail if variant isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/variants/99999999")
       .send({ unitWeight: 12 });
 
@@ -243,7 +241,7 @@ describe("PATCH /variants/:id", () => {
     expect(res.body.message).toBe("Variant not found");
   });
   it("should fail given invalid itemId or invalid unitWeight", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/variants/${createdVariant.id}`)
       .send({ itemId: -1, unitWeight: -1 });
 
@@ -264,7 +262,7 @@ describe("PATCH /variants/:id", () => {
   });
   it("should fail given non-existent itemId", async () => {
     const id = createdVariant.id;
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/variants/${id}`)
       .send({ itemId: 99999999 });
 
@@ -283,19 +281,19 @@ describe("DELETE /variants/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdVariant.id;
-    const res: VariantResponse = await request(app).delete(`/variants/${id}`);
+    const res: VariantResponse = await auth().delete(`/variants/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdVariant) });
 
-    const res2: ErrorResponse = await request(app).get(`/variants/${id}`);
+    const res2: ErrorResponse = await auth().get(`/variants/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Variant not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/variants/badId");
+    const res: ErrorResponse = await auth().delete("/variants/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -309,7 +307,7 @@ describe("DELETE /variants/:id", () => {
   });
 
   it("should fail if variant isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/variants/99999999");
+    const res: ErrorResponse = await auth().delete("/variants/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Variant not found");

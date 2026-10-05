@@ -13,6 +13,6 @@ export const login = async (req: Request, res: Response) => {
   const userDTO: loginDTO = req.body;
   const user = await findUser(userDTO);
   if (!user) throw new BadRequestException("Invalid credentials");
-  const data = signToken({ id: user.id });
+  const data = signToken({ sub: user.id.toString() });
   return res.json({ data });
 };

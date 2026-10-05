@@ -8,15 +8,15 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
+import { json, login,auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 
 type SeasonResponse = DataResponse<Season>;
 type PaginatedSeasonsResponse = PaginationResponse<Season[]>;
 
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
-
+beforeAll(async()=>{
+  await login()
+})
 const mockSeasons = [
   { name: "season 1", startDate: new Date("2026-09-24") },
   { name: "season 2", startDate: new Date("2026-09-25") },
@@ -33,7 +33,7 @@ describe("GET /seasons", () => {
   });
 
   it("should return all seasons", async () => {
-    const res: PaginatedSeasonsResponse = await request(app).get("/seasons");
+    const res: PaginatedSeasonsResponse = await auth().get("/seasons");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -48,7 +48,7 @@ describe("GET /seasons", () => {
   });
 
   it("should return paginated seasons given page and size", async () => {
-    const res: PaginatedSeasonsResponse = await request(app).get(
+    const res: PaginatedSeasonsResponse = await auth().get(
       "/seasons?page=2&size=2",
     );
 
@@ -65,7 +65,7 @@ describe("GET /seasons", () => {
   });
 
   it("should return all seasons that relate to queried name", async () => {
-    const res: PaginatedSeasonsResponse = await request(app).get(
+    const res: PaginatedSeasonsResponse = await auth().get(
       "/seasons?name=season%203",
     );
     const filtered = createdSeasons.filter(
@@ -82,7 +82,7 @@ describe("GET /seasons", () => {
     expect(res.body).toEqual(expectedRes);
   });
   it("should return all seasons sorted according to sortBy and order", async () => {
-    const res: PaginatedSeasonsResponse = await request(app).get(
+    const res: PaginatedSeasonsResponse = await auth().get(
       "/seasons?sortBy=startDate&order=desc",
     );
     const sorted = createdSeasons.toSorted(
@@ -102,7 +102,7 @@ describe("GET /seasons", () => {
   it("should return all seasons that started between startedFrom and startedTo", async () => {
     const start = "2026-09-23T00:00:00Z";
     const end = "2026-09-26T00:00:00Z";
-    const res: PaginatedSeasonsResponse = await request(app).get(
+    const res: PaginatedSeasonsResponse = await auth().get(
       `/seasons?startedFrom=${start}&startedTo=${end}`,
     );
     const filtered = createdSeasons.filter(
@@ -132,14 +132,14 @@ describe("GET /seasons/:id", () => {
 
   it("should return season given valid id", async () => {
     const id = createdSeason.id;
-    const res: SeasonResponse = await request(app).get(`/seasons/${id}`);
+    const res: SeasonResponse = await auth().get(`/seasons/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSeason) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/seasons/badId");
+    const res: ErrorResponse = await auth().get("/seasons/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -153,7 +153,7 @@ describe("GET /seasons/:id", () => {
   });
 
   it("should fail if season isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/seasons/999999999");
+    const res: ErrorResponse = await auth().get("/seasons/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Season not found");
@@ -166,7 +166,7 @@ describe("POST /seasons", () => {
   });
 
   it("should create season successfully given name", async () => {
-    const res: SeasonResponse = await request(app)
+    const res: SeasonResponse = await auth()
       .post("/seasons")
       .send(mockSeasons[0]);
 
@@ -175,7 +175,7 @@ describe("POST /seasons", () => {
   });
 
   it("should fail given invalid name", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/seasons")
       .send({ name: "sh" });
 
@@ -200,7 +200,7 @@ describe("PATCH /seasons/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdSeason.id;
-    const res: SeasonResponse = await request(app)
+    const res: SeasonResponse = await auth()
       .patch(`/seasons/${id}`)
       .send({ name: mockSeasons[1].name });
 
@@ -217,7 +217,7 @@ describe("PATCH /seasons/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/seasons/badId")
       .send({ name: mockSeasons[1].name });
 
@@ -232,7 +232,7 @@ describe("PATCH /seasons/:id", () => {
     ]);
   });
   it("should fail if season isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/seasons/99999999")
       .send({ name: mockSeasons[1].name });
 
@@ -240,7 +240,7 @@ describe("PATCH /seasons/:id", () => {
     expect(res.body.message).toBe("Season not found");
   });
   it("should fail given invalid data", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/seasons/${createdSeason.id}`)
       .send({ name: "sh" });
 
@@ -266,19 +266,19 @@ describe("DELETE /seasons/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdSeason.id;
-    const res: SeasonResponse = await request(app).delete(`/seasons/${id}`);
+    const res: SeasonResponse = await auth().delete(`/seasons/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSeason) });
 
-    const res2: ErrorResponse = await request(app).get(`/seasons/${id}`);
+    const res2: ErrorResponse = await auth().get(`/seasons/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Season not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/seasons/badId");
+    const res: ErrorResponse = await auth().delete("/seasons/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -292,7 +292,7 @@ describe("DELETE /seasons/:id", () => {
   });
 
   it("should fail if season isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/seasons/99999999");
+    const res: ErrorResponse = await auth().delete("/seasons/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Season not found");

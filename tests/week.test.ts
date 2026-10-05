@@ -8,14 +8,11 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
+import { json, login, auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 
 type WeekResponse = DataResponse<Week>;
 type PaginatedWeeksResponse = PaginationResponse<Week[]>;
-
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
 
 const mockSeasons = [
   { name: "season 1", startDate: new Date("2026-09-24T00:00:00Z") },
@@ -25,6 +22,7 @@ const mockSeasons = [
 let mockWeeks: { seasonId: number; startDate: Date }[] = [];
 let createdSeasons: Season[];
 beforeAll(async () => {
+  await login();
   createdSeasons = await prisma.season.createManyAndReturn({
     data: mockSeasons,
   });
@@ -52,7 +50,7 @@ describe("GET /weeks", () => {
   });
 
   it("should return all weeks", async () => {
-    const res: PaginatedWeeksResponse = await request(app).get("/weeks");
+    const res: PaginatedWeeksResponse = await auth().get("/weeks");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -67,7 +65,7 @@ describe("GET /weeks", () => {
   });
 
   it("should return paginated weeks given page and size", async () => {
-    const res: PaginatedWeeksResponse = await request(app).get(
+    const res: PaginatedWeeksResponse = await auth().get(
       "/weeks?page=2&size=2",
     );
 
@@ -84,7 +82,7 @@ describe("GET /weeks", () => {
   });
 
   it("should return all weeks that relate to queried season name or id", async () => {
-    const res: PaginatedWeeksResponse = await request(app).get(
+    const res: PaginatedWeeksResponse = await auth().get(
       `/weeks?seasonName=season%201&seasonId=${createdSeasons[0].id}`,
     );
     const filtered = createdWeeks.filter((week) => {
@@ -102,7 +100,7 @@ describe("GET /weeks", () => {
     expect(res.body).toEqual(expectedRes);
   });
   it("should return all weeks sorted according to sortBy and order", async () => {
-    const res: PaginatedWeeksResponse = await request(app).get(
+    const res: PaginatedWeeksResponse = await auth().get(
       "/weeks?sortBy=startDate&order=desc",
     );
     const sorted = createdWeeks.toSorted(
@@ -122,7 +120,7 @@ describe("GET /weeks", () => {
   it("should return all weeks that started between startedFrom and startedTo", async () => {
     const start = "2026-09-23T00:00:00Z";
     const end = "2026-09-28T00:00:00Z";
-    const res: PaginatedWeeksResponse = await request(app).get(
+    const res: PaginatedWeeksResponse = await auth().get(
       `/weeks?startedFrom=${start}&startedTo=${end}`,
     );
     const filtered = createdWeeks.filter(
@@ -152,14 +150,14 @@ describe("GET /weeks/:id", () => {
 
   it("should return week given valid id", async () => {
     const id = createdWeek.id;
-    const res: WeekResponse = await request(app).get(`/weeks/${id}`);
+    const res: WeekResponse = await auth().get(`/weeks/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdWeek) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/weeks/badId");
+    const res: ErrorResponse = await auth().get("/weeks/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -173,7 +171,7 @@ describe("GET /weeks/:id", () => {
   });
 
   it("should fail if week isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/weeks/999999999");
+    const res: ErrorResponse = await auth().get("/weeks/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Week not found");
@@ -186,16 +184,14 @@ describe("POST /weeks", () => {
   });
 
   it("should create week successfully given data", async () => {
-    const res: WeekResponse = await request(app)
-      .post("/weeks")
-      .send(mockWeeks[0]);
+    const res: WeekResponse = await auth().post("/weeks").send(mockWeeks[0]);
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(json({ data: mockWeeks[0] }));
   });
 
   it("should fail given invalid data", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/weeks")
       .send({ seasonId: -1, startDate: "0000-00-00T00:00:00Z" });
 
@@ -215,7 +211,7 @@ describe("POST /weeks", () => {
     ]);
   });
   it("should fail if season is not found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/weeks")
       .send({ seasonId: 99999999 });
 
@@ -233,7 +229,7 @@ describe("PATCH /weeks/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdWeek.id;
-    const res: WeekResponse = await request(app)
+    const res: WeekResponse = await auth()
       .patch(`/weeks/${id}`)
       .send({ seasonId: createdSeasons[1].id });
 
@@ -250,7 +246,7 @@ describe("PATCH /weeks/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/weeks/badId")
       .send({ seasonId: createdSeasons[1].id });
 
@@ -265,7 +261,7 @@ describe("PATCH /weeks/:id", () => {
     ]);
   });
   it("should fail if week isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/weeks/99999999")
       .send({ seasonId: createdSeasons[1].id });
 
@@ -273,7 +269,7 @@ describe("PATCH /weeks/:id", () => {
     expect(res.body.message).toBe("Week not found");
   });
   it("should fail given invalid data", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/weeks/${createdWeek.id}`)
       .send({ seasonId: -1 });
 
@@ -288,7 +284,7 @@ describe("PATCH /weeks/:id", () => {
     ]);
   });
   it("should fail if season is not found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/weeks/${createdWeek.id}`)
       .send({ seasonId: 99999999 });
 
@@ -307,19 +303,19 @@ describe("DELETE /weeks/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdWeek.id;
-    const res: WeekResponse = await request(app).delete(`/weeks/${id}`);
+    const res: WeekResponse = await auth().delete(`/weeks/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdWeek) });
 
-    const res2: ErrorResponse = await request(app).get(`/weeks/${id}`);
+    const res2: ErrorResponse = await auth().get(`/weeks/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Week not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/weeks/badId");
+    const res: ErrorResponse = await auth().delete("/weeks/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -333,7 +329,7 @@ describe("DELETE /weeks/:id", () => {
   });
 
   it("should fail if week isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/weeks/99999999");
+    const res: ErrorResponse = await auth().delete("/weeks/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Week not found");

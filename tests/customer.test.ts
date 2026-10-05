@@ -8,14 +8,13 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
+import { json, auth, login } from "./helpers/auth";
 import prisma from "../src/db/prisma";
-
 type CustomerResponse = DataResponse<Customer>;
 type PaginatedCustomersResponse = PaginationResponse<Customer[]>;
-
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
+beforeAll(async () => {
+  await login();
+});
 
 const mockCustomers = [
   { name: "john cena", number: "07775000" },
@@ -33,8 +32,7 @@ describe("GET /customers", () => {
   });
 
   it("should return all customers", async () => {
-    const res: PaginatedCustomersResponse =
-      await request(app).get("/customers");
+    const res: PaginatedCustomersResponse = await auth().get("/customers");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -49,7 +47,7 @@ describe("GET /customers", () => {
   });
 
   it("should return paginated customers given page and size", async () => {
-    const res: PaginatedCustomersResponse = await request(app).get(
+    const res: PaginatedCustomersResponse = await auth().get(
       "/customers?page=2&size=2",
     );
 
@@ -66,7 +64,7 @@ describe("GET /customers", () => {
   });
 
   it("should return all customers that relate to queried name or number", async () => {
-    const res: PaginatedCustomersResponse = await request(app).get(
+    const res: PaginatedCustomersResponse = await auth().get(
       "/customers?name=brock%20lesner",
     );
     const filtered = createdCustomers.filter(
@@ -81,14 +79,14 @@ describe("GET /customers", () => {
     });
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expectedRes);
-    const res2: PaginatedCustomersResponse = await request(app).get(
+    const res2: PaginatedCustomersResponse = await auth().get(
       `/customers?number=09997000`,
     );
     expect(res2.status).toBe(200);
     expect(res2.body).toEqual(expectedRes);
   });
     it("should return all customers sorted according to sortBy and order", async () => {
-      const res: PaginatedCustomersResponse = await request(app).get(
+      const res: PaginatedCustomersResponse = await auth().get(
         "/customers?sortBy=name&order=desc",
       );
       const sorted = createdCustomers.toSorted((a, b) =>
@@ -117,14 +115,14 @@ describe("GET /customers/:id", () => {
 
   it("should return customer given valid id", async () => {
     const id = createdCustomer.id;
-    const res: CustomerResponse = await request(app).get(`/customers/${id}`);
+    const res: CustomerResponse = await auth().get(`/customers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdCustomer) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/customers/badId");
+    const res: ErrorResponse = await auth().get("/customers/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -138,7 +136,7 @@ describe("GET /customers/:id", () => {
   });
 
   it("should fail if customer isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/customers/999999999");
+    const res: ErrorResponse = await auth().get("/customers/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Customer not found");
@@ -151,7 +149,7 @@ describe("POST /customers", () => {
   });
 
   it("should create customer successfully given name and number", async () => {
-    const res: CustomerResponse = await request(app)
+    const res: CustomerResponse = await auth()
       .post("/customers")
       .send(mockCustomers[0]);
 
@@ -160,7 +158,7 @@ describe("POST /customers", () => {
   });
 
   it("should fail given invalid name or invalid number", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/customers")
       .send({ name: "sh", number: "07" });
 
@@ -190,7 +188,7 @@ describe("PATCH /customers/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdCustomer.id;
-    const res: CustomerResponse = await request(app)
+    const res: CustomerResponse = await auth()
       .patch(`/customers/${id}`)
       .send({ name: mockCustomers[1].name });
 
@@ -207,7 +205,7 @@ describe("PATCH /customers/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/customers/badId")
       .send({ name: mockCustomers[1].name });
 
@@ -222,7 +220,7 @@ describe("PATCH /customers/:id", () => {
     ]);
   });
   it("should fail if customer isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/customers/99999999")
       .send({ name: mockCustomers[1].name });
 
@@ -230,7 +228,7 @@ describe("PATCH /customers/:id", () => {
     expect(res.body.message).toBe("Customer not found");
   });
   it("should fail given invalid name or invalid number", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/customers/${createdCustomer.id}`)
       .send({ name: "sh", number: "07" });
 
@@ -263,19 +261,19 @@ describe("DELETE /customers/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdCustomer.id;
-    const res: CustomerResponse = await request(app).delete(`/customers/${id}`);
+    const res: CustomerResponse = await auth().delete(`/customers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdCustomer) });
 
-    const res2: ErrorResponse = await request(app).get(`/customers/${id}`);
+    const res2: ErrorResponse = await auth().get(`/customers/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Customer not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/customers/badId");
+    const res: ErrorResponse = await auth().delete("/customers/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -289,7 +287,7 @@ describe("DELETE /customers/:id", () => {
   });
 
   it("should fail if customer isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/customers/99999999");
+    const res: ErrorResponse = await auth().delete("/customers/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Customer not found");

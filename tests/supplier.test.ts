@@ -8,15 +8,15 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
+import { json, login,auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 
 type SupplierResponse = DataResponse<Supplier>;
 type PaginatedSuppliersResponse = PaginationResponse<Supplier[]>;
 
-const json = <T>(data: T) => JSON.parse(JSON.stringify(data));
-
+beforeAll(async()=>{
+  await login()
+})
 const mockSuppliers = [
   { name: "john cena", number: "07775000" },
   { name: "cm punk", number: "08886000" },
@@ -34,7 +34,7 @@ describe("GET /suppliers", () => {
 
   it("should return all suppliers", async () => {
     const res: PaginatedSuppliersResponse =
-      await request(app).get("/suppliers");
+      await auth().get("/suppliers");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -49,7 +49,7 @@ describe("GET /suppliers", () => {
   });
 
   it("should return paginated suppliers given page and size", async () => {
-    const res: PaginatedSuppliersResponse = await request(app).get(
+    const res: PaginatedSuppliersResponse = await auth().get(
       "/suppliers?page=2&size=2",
     );
 
@@ -66,7 +66,7 @@ describe("GET /suppliers", () => {
   });
 
   it("should return all suppliers that relate to queried name or number", async () => {
-    const res: PaginatedSuppliersResponse = await request(app).get(
+    const res: PaginatedSuppliersResponse = await auth().get(
       "/suppliers?name=brock%20lesner",
     );
     const filtered = createdSuppliers.filter(
@@ -81,14 +81,14 @@ describe("GET /suppliers", () => {
     });
     expect(res.status).toBe(200);
     expect(res.body).toEqual(expectedRes);
-    const res2: PaginatedSuppliersResponse = await request(app).get(
+    const res2: PaginatedSuppliersResponse = await auth().get(
       `/suppliers?number=09997000`,
     );
     expect(res2.status).toBe(200);
     expect(res2.body).toEqual(expectedRes);
   });
     it("should return all suppliers sorted according to sortBy and order", async () => {
-      const res: PaginatedSuppliersResponse = await request(app).get(
+      const res: PaginatedSuppliersResponse = await auth().get(
         "/suppliers?sortBy=name&order=desc",
       );
       const sorted = createdSuppliers.toSorted((a, b) =>
@@ -117,14 +117,14 @@ describe("GET /suppliers/:id", () => {
 
   it("should return supplier given valid id", async () => {
     const id = createdSupplier.id;
-    const res: SupplierResponse = await request(app).get(`/suppliers/${id}`);
+    const res: SupplierResponse = await auth().get(`/suppliers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSupplier) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).get("/suppliers/badId");
+    const res: ErrorResponse = await auth().get("/suppliers/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -138,7 +138,7 @@ describe("GET /suppliers/:id", () => {
   });
 
   it("should fail if supplier isn't found", async () => {
-    const res: ErrorResponse = await request(app).get("/suppliers/999999999");
+    const res: ErrorResponse = await auth().get("/suppliers/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Supplier not found");
@@ -151,7 +151,7 @@ describe("POST /suppliers", () => {
   });
 
   it("should create supplier successfully given name and number", async () => {
-    const res: SupplierResponse = await request(app)
+    const res: SupplierResponse = await auth()
       .post("/suppliers")
       .send(mockSuppliers[0]);
 
@@ -160,7 +160,7 @@ describe("POST /suppliers", () => {
   });
 
   it("should fail given invalid name or invalid number", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .post("/suppliers")
       .send({ name: "sh", number: "07" });
 
@@ -190,7 +190,7 @@ describe("PATCH /suppliers/:id", () => {
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const id = createdSupplier.id;
-    const res: SupplierResponse = await request(app)
+    const res: SupplierResponse = await auth()
       .patch(`/suppliers/${id}`)
       .send({ name: mockSuppliers[1].name });
 
@@ -207,7 +207,7 @@ describe("PATCH /suppliers/:id", () => {
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/suppliers/badId")
       .send({ name: mockSuppliers[1].name });
 
@@ -222,7 +222,7 @@ describe("PATCH /suppliers/:id", () => {
     ]);
   });
   it("should fail if supplier isn't found", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch("/suppliers/99999999")
       .send({ name: mockSuppliers[1].name });
 
@@ -230,7 +230,7 @@ describe("PATCH /suppliers/:id", () => {
     expect(res.body.message).toBe("Supplier not found");
   });
   it("should fail given invalid name or invalid number", async () => {
-    const res: ErrorResponse = await request(app)
+    const res: ErrorResponse = await auth()
       .patch(`/suppliers/${createdSupplier.id}`)
       .send({ name: "sh", number: "07" });
 
@@ -261,19 +261,19 @@ describe("DELETE /suppliers/:id", () => {
 
   it("should delete successfully given valid id", async () => {
     const id = createdSupplier.id;
-    const res: SupplierResponse = await request(app).delete(`/suppliers/${id}`);
+    const res: SupplierResponse = await auth().delete(`/suppliers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSupplier) });
 
-    const res2: ErrorResponse = await request(app).get(`/suppliers/${id}`);
+    const res2: ErrorResponse = await auth().get(`/suppliers/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Supplier not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await request(app).delete("/suppliers/badId");
+    const res: ErrorResponse = await auth().delete("/suppliers/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -287,7 +287,7 @@ describe("DELETE /suppliers/:id", () => {
   });
 
   it("should fail if supplier isn't found", async () => {
-    const res: ErrorResponse = await request(app).delete("/suppliers/99999999");
+    const res: ErrorResponse = await auth().delete("/suppliers/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Supplier not found");
