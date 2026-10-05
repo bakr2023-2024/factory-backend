@@ -18,9 +18,9 @@ beforeAll(async()=>{
   await login()
 })
 const mockSeasons = [
-  { name: "season 1", startDate: new Date("2026-09-24") },
-  { name: "season 2", startDate: new Date("2026-09-25") },
-  { name: "season 3", startDate: new Date("2026-09-27") },
+  { name: "season 1", startDate: new Date("2026-09-24T00:00:00Z") },
+  { name: "season 2", startDate: new Date("2026-09-25T00:00:00Z") },
+  { name: "season 3", startDate: new Date("2026-09-27T00:00:00Z") },
 ];
 describe("GET /seasons", () => {
   let createdSeasons: Season[] = [];
@@ -100,8 +100,8 @@ describe("GET /seasons", () => {
     );
   });
   it("should return all seasons that started between startedFrom and startedTo", async () => {
-    const start = "2026-09-23T00:00:00Z";
-    const end = "2026-09-26T00:00:00Z";
+    const start = "2026-09-23";
+    const end = "2026-09-26";
     const res: PaginatedSeasonsResponse = await auth().get(
       `/seasons?startedFrom=${start}&startedTo=${end}`,
     );
@@ -168,7 +168,10 @@ describe("POST /seasons", () => {
   it("should create season successfully given name", async () => {
     const res: SeasonResponse = await auth()
       .post("/seasons")
-      .send(mockSeasons[0]);
+      .send({
+        ...mockSeasons[0],
+        startDate: mockSeasons[0].startDate.toISOString().slice(0, 10),
+      });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(json({ data: mockSeasons[0] }));

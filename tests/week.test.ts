@@ -118,8 +118,8 @@ describe("GET /weeks", () => {
     );
   });
   it("should return all weeks that started between startedFrom and startedTo", async () => {
-    const start = "2026-09-23T00:00:00Z";
-    const end = "2026-09-28T00:00:00Z";
+    const start = "2026-09-23";
+    const end = "2026-09-28";
     const res: PaginatedWeeksResponse = await auth().get(
       `/weeks?startedFrom=${start}&startedTo=${end}`,
     );
@@ -184,8 +184,12 @@ describe("POST /weeks", () => {
   });
 
   it("should create week successfully given data", async () => {
-    const res: WeekResponse = await auth().post("/weeks").send(mockWeeks[0]);
-
+    const res: WeekResponse = await auth()
+      .post("/weeks")
+      .send({
+        ...mockWeeks[0],
+        startDate: mockWeeks[0].startDate.toISOString().slice(0, 10),
+      });
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(json({ data: mockWeeks[0] }));
   });
@@ -205,7 +209,7 @@ describe("POST /weeks", () => {
       },
       {
         key: "body",
-        message: "Invalid DateTime",
+        message: "Invalid Date",
         path: ["startDate"],
       },
     ]);
