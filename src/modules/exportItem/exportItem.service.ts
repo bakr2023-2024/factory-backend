@@ -106,9 +106,7 @@ export const createExportItem = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException(
-          "No exportId/variantId exists with this ID",
-        );
+        throw new ConflictException("No export/variant exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -128,9 +126,7 @@ export const updateExportItem = async (
       if (err.code === "P2025")
         throw new NotFoundException("ExportItem not found");
       else if (err.code === "P2003")
-        throw new ConflictException(
-          "No exportId/variantId exists with that ID",
-        );
+        throw new ConflictException("No export/variant exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }

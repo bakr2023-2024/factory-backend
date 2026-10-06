@@ -1,8 +1,4 @@
 import { ImportItem, Prisma } from "../../db/generated/prisma/client";
-import {
-  ImportItemFindManyArgs,
-  ImportItemWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -110,9 +106,7 @@ export const createImportItem = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException(
-          "No importId/variantId exists with this ID",
-        );
+        throw new ConflictException("No import/variant exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -132,9 +126,7 @@ export const updateImportItem = async (
       if (err.code === "P2025")
         throw new NotFoundException("ImportItem not found");
       else if (err.code === "P2003")
-        throw new ConflictException(
-          "No importId/variantId exists with that ID",
-        );
+        throw new ConflictException("No import/variant exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }

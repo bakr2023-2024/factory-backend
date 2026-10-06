@@ -43,7 +43,6 @@ const mockExportItems: {
   variantId: number;
   quantity: number;
   unitPrice?: number;
-  createdAt: Date;
 }[] = [];
 beforeAll(async () => {
   await login();
@@ -76,21 +75,18 @@ beforeAll(async () => {
     variantId: createdVariants[0].id,
     quantity: 5,
     unitPrice: 23.4,
-    createdAt: new Date("2025-09-13T12:00:00Z"),
   });
   mockExportItems.push({
     exportId: createdExports[0].id,
     variantId: createdVariants[1].id,
     quantity: 3,
     unitPrice: 25.2,
-    createdAt: new Date("2025-09-17T10:00:00Z"),
   });
   mockExportItems.push({
     exportId: createdExports[1].id,
     variantId: createdVariants[1].id,
     quantity: 4,
     unitPrice: 20.5,
-    createdAt: new Date("2025-09-15T08:00:00Z"),
   });
 });
 describe("GET /exportItems", () => {
@@ -270,7 +266,6 @@ describe("POST /exportItems", () => {
     const res: ErrorResponse = await auth()
       .post("/exportItems")
       .send({ ...mockExportItems[1], exportId: 99999999 });
-
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
   });
