@@ -1,11 +1,14 @@
 import { Prisma } from "../db/generated/prisma/client";
+import { paginateConsumptionsDTO } from "../modules/consumption/consumption.validation";
 import { paginateCustomersDTO } from "../modules/customer/customer.validation";
 import { paginateExportsDTO } from "../modules/export/export.validation";
 import { paginateExportItemsDTO } from "../modules/exportItem/exportItem.validation";
 import { paginateImportsDTO } from "../modules/import/import.validation";
 import { paginateImportItemsDTO } from "../modules/importItem/importItem.validation";
 import { paginateItemsDTO } from "../modules/item/item.validation";
+import { paginateProductionBatchesDTO } from "../modules/productionBatch/productionBatch.validation";
 import { paginateProductionDaysDTO } from "../modules/productionDay/productionDay.validation";
+import { paginateProductionEntriesDTO } from "../modules/productionEntry/productionEntry.validation";
 import { paginateSeasonsDTO } from "../modules/season/season.validation";
 import { paginateSuppliersDTO } from "../modules/supplier/supplier.validation";
 import { paginateVariantsDTO } from "../modules/variant/variant.validation";
@@ -22,7 +25,10 @@ type Query =
   | Prisma.ExportItemFindManyArgs
   | Prisma.SeasonFindManyArgs
   | Prisma.WeekFindManyArgs
-  | Prisma.ProductionDayFindManyArgs;
+  | Prisma.ProductionDayFindManyArgs
+  | Prisma.ProductionEntryFindManyArgs
+  | Prisma.ProductionBatchFindManyArgs
+  | Prisma.ConsumptionFindManyArgs;
 
 type Where =
   | Prisma.ItemWhereInput
@@ -35,7 +41,10 @@ type Where =
   | Prisma.ExportItemWhereInput
   | Prisma.SeasonWhereInput
   | Prisma.WeekWhereInput
-  | Prisma.ProductionDayWhereInput;
+  | Prisma.ProductionDayWhereInput
+  | Prisma.ProductionEntryWhereInput
+  | Prisma.ProductionBatchWhereInput
+  | Prisma.ConsumptionWhereInput;
 
 type OrderBy =
   | Prisma.ItemOrderByWithRelationInput
@@ -48,7 +57,10 @@ type OrderBy =
   | Prisma.ExportItemOrderByWithRelationInput
   | Prisma.SeasonOrderByWithRelationInput
   | Prisma.WeekOrderByWithRelationInput
-  | Prisma.ProductionDayOrderByWithRelationInput;
+  | Prisma.ProductionDayOrderByWithRelationInput
+  | Prisma.ProductionEntryOrderByWithRelationInput
+  | Prisma.ProductionBatchOrderByWithRelationInput
+  | Prisma.ConsumptionOrderByWithRelationInput;
 
 type Pagination =
   | paginateItemsDTO
@@ -61,7 +73,11 @@ type Pagination =
   | paginateExportItemsDTO
   | paginateSeasonsDTO
   | paginateWeeksDTO
-  | paginateProductionDaysDTO;
+  | paginateProductionDaysDTO
+  | paginateProductionEntriesDTO
+  | paginateProductionBatchesDTO
+  | paginateConsumptionsDTO;
+
 
 export const buildQuery = (
   pagination: Pagination,

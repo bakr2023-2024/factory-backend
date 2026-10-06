@@ -18,10 +18,8 @@ export const fields = {
     .date({ message: "Invalid Date" })
     .transform((s) => new Date(`${s}T00:00:00.000Z`)),
   dateTime: z.iso.datetime({ message: "Invalid DateTime" }),
-  unitWeight: z
-    .number()
-    .min(0.1, { message: "unit weight must be above 0" })
-    .default(1),
+  unitWeight: z.number().min(0.1, { message: "unit weight must be above 0" }),
+  unitWeightParam: strToNum("unitWeight can only be a positive number"),
   name: z
     .string()
     .min(3, { message: "Name is too short" })
@@ -34,6 +32,7 @@ export const fields = {
     .number()
     .int()
     .min(1, { message: "quantity can only be a positive integer" }),
+  quantityParam: strToNum("quantity can only be a positive integer"),
   unitPriceBody: z
     .number()
     .min(0.01, { message: "price can only be a positive number" }),
@@ -67,7 +66,7 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   Season: Object.values(Prisma.SeasonScalarFieldEnum),
   Week: Object.values(Prisma.WeekScalarFieldEnum),
   ProductionDay: Object.values(Prisma.ProductionDayScalarFieldEnum),
-  ProductionEntry: [],
-  ProductionBatch: [],
-  Consumption: [],
+  ProductionEntry: Object.values(Prisma.ProductionEntryScalarFieldEnum),
+  ProductionBatch: Object.values(Prisma.ProductionBatchScalarFieldEnum),
+  Consumption: Object.values(Prisma.ConsumptionScalarFieldEnum),
 };

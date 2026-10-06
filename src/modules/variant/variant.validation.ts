@@ -5,6 +5,7 @@ export const paginateVariants = {
   query: fields.paginate("Variant").extend({
     itemId: fields.idParam.optional(),
     itemName: fields.name.optional(),
+    unitWeight: fields.unitWeightParam.optional(),
   }),
 };
 export const getVariant = {
@@ -15,7 +16,7 @@ export const getVariant = {
 export const createVariant = {
   body: z.strictObject({
     itemId: fields.idBody,
-    unitWeight: fields.unitWeight,
+    unitWeight: fields.unitWeight.default(1),
     notes: z.string().optional(),
   }),
 };
