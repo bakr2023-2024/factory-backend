@@ -31,18 +31,14 @@ export const getProductionDays = async (
   // inject fields into query
 
   const startedAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy == "startedAt") orderBy.startedAt = pagination.order;
   if (pagination.startedFrom) startedAt.gte = pagination.startedFrom;
   if (pagination.startedTo) startedAt.lte = pagination.startedTo;
   if (pagination.startedFrom || pagination.startedTo)
     where.startedAt = startedAt;
   const endedAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy == "endedAt") orderBy.endedAt = pagination.order;
   if (pagination.endedFrom) endedAt.gte = pagination.endedFrom;
   if (pagination.endedTo) endedAt.lte = pagination.endedTo;
   if (pagination.endedFrom || pagination.endedTo) where.endedAt = endedAt;
-  if (pagination.sortBy == "productionDate")
-    orderBy.productionDate = pagination.order;
   if (pagination.productionDate)
     where.productionDate = pagination.productionDate;
   if (pagination.weekId) where.weekId = pagination.weekId;

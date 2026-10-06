@@ -47,14 +47,22 @@ export const getExportItems = async (
   }
 
   if (pagination.itemName) {
-    where.variant = {
-      item: {
+    if (where.variant)
+      where.variant.item = {
         name: {
           contains: pagination.itemName,
           mode: "insensitive",
         },
-      },
-    };
+      };
+    else
+      where.variant = {
+        item: {
+          name: {
+            contains: pagination.itemName,
+            mode: "insensitive",
+          },
+        },
+      };
   }
 
   const unitPrice: Prisma.DecimalFilter = {};
