@@ -8,8 +8,6 @@ import {
   ErrorResponse,
   PaginationResponse,
 } from "../src/utils/types/response.types";
-import request from "supertest";
-import app from "../src/app";
 import { json, login, auth } from "./helpers/auth";
 import prisma from "../src/db/prisma";
 

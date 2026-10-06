@@ -236,7 +236,7 @@ describe("POST /importItems", () => {
     });
   });
 
-  it("should fail given invalid importId or variantId or quantity or unitPrice", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/importItems")
       .send({ importId: -1, variantId: -1, quantity: -1, unitPrice: -1 });
@@ -266,6 +266,22 @@ describe("POST /importItems", () => {
       },
     ]);
   });
+    it("should fail if import isn't found", async () => {
+      const res: ErrorResponse = await auth()
+        .post("/importItems")
+        .send({ ...mockImportItems[1], importId: 99999999 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe("No import/variant exists with that ID");
+    });
+    it("should fail if variant isn't found", async () => {
+      const res: ErrorResponse = await auth()
+        .post("/productionEntries")
+        .send({ ...mockImportItems[1], variantId: 99999999 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe("No import/variant exists with that ID");
+    });
 });
 
 describe("PATCH /importItems/:id", () => {
@@ -318,7 +334,7 @@ describe("PATCH /importItems/:id", () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("ImportItem not found");
   });
-  it("should fail given invalid importId or variantId or quantity or unitPrice", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .patch(`/importItems/${createdImportItem.id}`)
       .send({ importId: -1, variantId: -1, quantity: -1, unitPrice: -1 });
@@ -347,6 +363,26 @@ describe("PATCH /importItems/:id", () => {
         path: ["unitPrice"],
       },
     ]);
+  });
+  it("should fail if import is not found", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/importItems/${createdImportItem.id}`)
+      .send({ importId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No import/variant exists with that ID",
+    );
+  });
+  it("should fail if variant is not found", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/importItems/${createdImportItem.id}`)
+      .send({ variantId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No import/variant exists with that ID",
+    );
   });
 });
 

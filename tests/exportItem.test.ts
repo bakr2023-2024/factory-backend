@@ -236,7 +236,7 @@ describe("POST /exportItems", () => {
     });
   });
 
-  it("should fail given invalid exportId or variantId or quantity or unitPrice", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/exportItems")
       .send({ exportId: -1, variantId: -1, quantity: -1, unitPrice: -1 });
@@ -265,6 +265,22 @@ describe("POST /exportItems", () => {
         path: ["unitPrice"],
       },
     ]);
+  });
+  it("should fail if export isn't found", async () => {
+    const res: ErrorResponse = await auth()
+      .post("/exportItems")
+      .send({ ...mockExportItems[1], exportId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No export/variant exists with that ID");
+  });
+  it("should fail if variant isn't found", async () => {
+    const res: ErrorResponse = await auth()
+      .post("/exportItems")
+      .send({ ...mockExportItems[1], variantId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No export/variant exists with that ID");
   });
 });
 
@@ -318,7 +334,7 @@ describe("PATCH /exportItems/:id", () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("ExportItem not found");
   });
-  it("should fail given invalid exportId or variantId or quantity or unitPrice", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .patch(`/exportItems/${createdExportItem.id}`)
       .send({ exportId: -1, variantId: -1, quantity: -1, unitPrice: -1 });
@@ -348,6 +364,22 @@ describe("PATCH /exportItems/:id", () => {
       },
     ]);
   });
+    it("should fail if import is not found", async () => {
+      const res: ErrorResponse = await auth()
+        .patch(`/exportItems/${createdExportItem.id}`)
+        .send({ exportId: 99999999 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe("No export/variant exists with that ID");
+    });
+    it("should fail if variant is not found", async () => {
+      const res: ErrorResponse = await auth()
+        .patch(`/exportItems/${createdExportItem.id}`)
+        .send({ variantId: 99999999 });
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe("No export/variant exists with that ID");
+    });
 });
 
 describe("DELETE /exportItems/:id", () => {
