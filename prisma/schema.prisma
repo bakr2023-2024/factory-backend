@@ -269,6 +269,7 @@ model ProductionBatch {
   id                Int      @id @default(autoincrement())
   productionEntryId Int
   quantity          Int
+  occurredAt        DateTime @default(now())
   notes             String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -285,6 +286,7 @@ model Consumption {
   productionDayId Int
   variantId       Int
   quantity        Int
+  occurredAt      DateTime @default(now())
   notes           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

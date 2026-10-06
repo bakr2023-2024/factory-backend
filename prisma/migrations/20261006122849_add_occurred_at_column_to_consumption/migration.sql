@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Consumption" ADD COLUMN     "occurredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
