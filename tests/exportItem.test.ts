@@ -257,7 +257,7 @@ describe("POST /exportItems", () => {
       },
       {
         key: "body",
-        message: "price can only be a positive number",
+        message: "unitPrice can only be a positive number",
         path: ["unitPrice"],
       },
     ]);
@@ -354,7 +354,7 @@ describe("PATCH /exportItems/:id", () => {
       },
       {
         key: "body",
-        message: "price can only be a positive number",
+        message: "unitPrice can only be a positive number",
         path: ["unitPrice"],
       },
     ]);
