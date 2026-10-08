@@ -19,6 +19,10 @@ import productionDayRouter from "./modules/productionDay/productionDay.route";
 import productionEntryRouter from "./modules/productionEntry/productionEntry.route";
 import productionBatchRouter from "./modules/productionBatch/productionBatch.route";
 import consumptionRouter from "./modules/consumption/consumption.route";
+import customerReturnRouter from "./modules/customerReturn/customerReturn.route";
+import customerReturnItemRouter from "./modules/customerReturnItem/customerReturnItem.route";
+import supplierReturnRouter from "./modules/supplierReturn/supplierReturn.route";
+import supplierReturnItemRouter from "./modules/supplierReturnItem/supplierReturnItem.route";
 import { ErrorDetail } from "./utils/types/types";
 import { authentication } from "./middleware/auth.middleware";
 const app = express();
@@ -38,6 +42,10 @@ app.use("/productionDays", authentication, productionDayRouter);
 app.use("/productionEntries", authentication, productionEntryRouter);
 app.use("/productionBatches", authentication, productionBatchRouter);
 app.use("/consumptions", authentication, consumptionRouter);
+app.use("/customerReturns", authentication, customerReturnRouter);
+app.use("/customerReturnItems", authentication, customerReturnItemRouter);
+app.use("/supplierReturns", authentication, supplierReturnRouter);
+app.use("/supplierReturnItems", authentication, supplierReturnItemRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
