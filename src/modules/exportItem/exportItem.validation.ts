@@ -8,9 +8,12 @@ export const paginateExportItems = {
     exportId: fields.idParam.optional(),
     itemId: fields.idParam.optional(),
     customerName: fields.name.optional(),
+    customerNumber: fields.number.optional(),
     itemName: fields.name.optional(),
     minPrice: fields.unitPriceParam.optional(),
     maxPrice: fields.unitPriceParam.optional(),
+    occurredFrom:fields.dateTime.optional(),
+    occurredTo:fields.dateTime.optional()
   }),
 };
 export const getExportItem = {

@@ -1,5 +1,4 @@
 import { ExportItem, Prisma } from "../../db/generated/prisma/client";
-import { ExportItemWhereInput } from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -26,52 +25,57 @@ export const getExportItems = async (
   const where: Prisma.ExportItemWhereInput = {};
   const orderBy: Prisma.ExportItemOrderByWithRelationInput = {};
 
-  if (pagination.customerId)
-    where.export = { customerId: pagination.customerId };
+  const exporte: Prisma.ExportWhereInput = {};
+  const variant: Prisma.VariantWhereInput = {};
+  const unitPrice: Prisma.DecimalFilter = {};
+  if (pagination.customerId) exporte.customerId = pagination.customerId;
 
   if (pagination.variantId) where.variantId = pagination.variantId;
 
   if (pagination.exportId) where.exportId = pagination.exportId;
 
-  if (pagination.itemId) where.variant = { itemId: pagination.itemId };
+  if (pagination.itemId) variant.itemId = pagination.itemId;
 
   if (pagination.customerName) {
-    where.export = {
-      customer: {
-        name: {
-          contains: pagination.customerName,
-          mode: "insensitive",
-        },
+    exporte.customer = {
+      name: {
+        contains: pagination.customerName,
+        mode: "insensitive",
       },
     };
   }
-
-  if (pagination.itemName) {
-    if (where.variant)
-      where.variant.item = {
-        name: {
-          contains: pagination.itemName,
-          mode: "insensitive",
-        },
+  if (pagination.customerNumber) {
+    if (exporte.customer)
+      exporte.customer.number = {
+        contains: pagination.customerNumber,
+        mode: "insensitive",
       };
     else
-      where.variant = {
-        item: {
-          name: {
-            contains: pagination.itemName,
-            mode: "insensitive",
-          },
+      exporte.customer = {
+        number: {
+          contains: pagination.customerNumber,
+          mode: "insensitive",
         },
       };
   }
 
-  const unitPrice: Prisma.DecimalFilter = {};
+  if (pagination.itemName) {
+    variant.item = {
+      name: {
+        contains: pagination.itemName,
+        mode: "insensitive",
+      },
+    };
+  }
 
   if (pagination.minPrice)
     unitPrice.gte = new Prisma.Decimal(pagination.minPrice);
   if (pagination.maxPrice)
     unitPrice.lte = new Prisma.Decimal(pagination.maxPrice);
-  if (pagination.minPrice || pagination.maxPrice) where.unitPrice = unitPrice;
+
+  if (Object.keys(exporte).length) where.export = exporte;
+  if (Object.keys(variant).length) where.variant = variant;
+  if (Object.keys(unitPrice).length) where.unitPrice = unitPrice;
 
   buildQuery(pagination, query, where, orderBy);
 

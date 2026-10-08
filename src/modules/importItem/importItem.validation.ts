@@ -8,6 +8,7 @@ export const paginateImportItems = {
     importId: fields.idParam.optional(),
     itemId: fields.idParam.optional(),
     supplierName: fields.name.optional(),
+    supplierNumber: fields.name.optional(),
     itemName: fields.name.optional(),
     minPrice: fields.unitPriceParam.optional(),
     maxPrice: fields.unitPriceParam.optional(),

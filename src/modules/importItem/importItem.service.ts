@@ -25,53 +25,52 @@ export const getImportItems = async (
   const where: Prisma.ImportItemWhereInput = {};
   const orderBy: Prisma.ImportItemOrderByWithRelationInput = {};
 
-  if (pagination.supplierId)
-    where.import = { supplierId: pagination.supplierId };
+  const importe: Prisma.ImportWhereInput = {};
+  const variant: Prisma.VariantWhereInput = {};
+  const unitPrice: Prisma.DecimalFilter = {};
+  if (pagination.supplierId) importe.supplierId = pagination.supplierId;
 
   if (pagination.variantId) where.variantId = pagination.variantId;
 
   if (pagination.importId) where.importId = pagination.importId;
 
-  if (pagination.itemId) where.variant = { itemId: pagination.itemId };
+  if (pagination.itemId) variant.itemId = pagination.itemId;
 
   if (pagination.supplierName) {
-    where.import = {
-      supplier: {
-        name: {
-          contains: pagination.supplierName,
-          mode: "insensitive",
-        },
+    importe.supplier = {
+      name: {
+        contains: pagination.supplierName,
+        mode: "insensitive",
       },
     };
   }
-
+  if(pagination.supplierNumber){
+    if(importe.supplier)
+      importe.supplier.number = {contains:pagination.supplierNumber,mode:"insensitive"}
+    else importe.supplier = {number:{contains:pagination.supplierNumber,mode:"insensitive"}}
+  }
   if (pagination.itemName) {
-    if (where.variant)
-      where.variant.item = {
+    if (variant.item)
+      variant.item.name = {
+        contains: pagination.itemName,
+        mode: "insensitive",
+      };
+    else
+      variant.item = {
         name: {
           contains: pagination.itemName,
           mode: "insensitive",
         },
       };
-    else
-      where.variant = {
-        item: {
-          name: {
-            contains: pagination.itemName,
-            mode: "insensitive",
-          },
-        },
-      };
   }
-
-  const unitPrice: Prisma.DecimalFilter = {};
-
   if (pagination.minPrice)
     unitPrice.gte = new Prisma.Decimal(pagination.minPrice);
   if (pagination.maxPrice)
     unitPrice.lte = new Prisma.Decimal(pagination.maxPrice);
-  if (pagination.minPrice || pagination.maxPrice) 
-    where.unitPrice = unitPrice;
+
+  if (Object.keys(importe).length) where.import = importe;
+  if (Object.keys(variant).length) where.variant = variant;
+  if (Object.keys(unitPrice).length) where.unitPrice = unitPrice;
 
   buildQuery(pagination, query, where, orderBy);
 

@@ -2,6 +2,7 @@ import { Consumption, Prisma } from "../../db/generated/prisma/client";
 import {
   ConsumptionFindManyArgs,
   ConsumptionWhereInput,
+  VariantWhereInput,
 } from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
@@ -29,19 +30,17 @@ export const getConsumptions = async (
   const orderBy: Prisma.ConsumptionOrderByWithRelationInput = {};
 
   // inject fields into query
+  const variant: VariantWhereInput = {};
   if (pagination.productionDayId)
     where.productionDayId = pagination.productionDayId;
   if (pagination.variantId) where.variantId = pagination.variantId;
   if (pagination.productionDate)
     where.productionDay = { productionDate: pagination.productionDate };
   if (pagination.itemName)
-    where.variant = {
-      item: { name: { contains: pagination.itemName, mode: "insensitive" } },
+    variant.item = {
+      name: { contains: pagination.itemName, mode: "insensitive" },
     };
-  if (pagination.unitWeight) {
-    if (where.variant) where.variant.unitWeight = pagination.unitWeight;
-    else where.variant = { unitWeight: pagination.unitWeight };
-  }
+  if (pagination.unitWeight) variant.unitWeight = pagination.unitWeight;
   if (pagination.quantity) where.quantity = pagination.quantity;
 
   const occurredAt: Prisma.DateTimeFilter = {};
@@ -51,6 +50,8 @@ export const getConsumptions = async (
   if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
   if (pagination.occurredFrom || pagination.occurredTo)
     where.occurredAt = occurredAt;
+
+  if (Object.keys(variant).length > 0) where.variant = variant;
 
   buildQuery(pagination, query, where, orderBy);
 

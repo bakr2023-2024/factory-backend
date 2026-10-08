@@ -29,43 +29,23 @@ export const getProductionBatches = async (
   const orderBy: Prisma.ProductionBatchOrderByWithRelationInput = {};
 
   // inject fields into query
-
+  const productionEntry: Prisma.ProductionEntryWhereInput = {};
   if (pagination.productionEntryId)
     where.productionEntryId = pagination.productionEntryId;
   if (pagination.productionDayId)
-    where.productionEntry = { productionDayId: pagination.productionDayId };
+    productionEntry.productionDayId = pagination.productionDayId;
   if (pagination.productionDate)
-    if (where.productionEntry)
-      where.productionEntry.productionDay = {
-        productionDate: pagination.productionDate,
-      };
-    else
-      where.productionEntry = {
-        productionDay: { productionDate: pagination.productionDate },
-      };
+    productionEntry.productionDay = {
+      productionDate: pagination.productionDate,
+    };
   if (pagination.itemName)
-    if (where.productionEntry)
-      where.productionEntry.variant = {
-        item: { name: { contains: pagination.itemName, mode: "insensitive" } },
-      };
-    else
-      where.productionEntry = {
-        variant: {
-          item: {
-            name: { contains: pagination.itemName, mode: "insensitive" },
-          },
-        },
-      };
+    productionEntry.variant = {
+      item: { name: { contains: pagination.itemName, mode: "insensitive" } },
+    };
   if (pagination.unitWeight) {
-    if (where.productionEntry) {
-      if (where.productionEntry.variant)
-        where.productionEntry.variant.unitWeight = pagination.unitWeight;
-      else
-        where.productionEntry.variant = { unitWeight: pagination.unitWeight };
-    } else
-      where.productionEntry = {
-        variant: { unitWeight: pagination.unitWeight },
-      };
+    if (productionEntry.variant)
+      productionEntry.variant.unitWeight = pagination.unitWeight;
+    else productionEntry.variant = { unitWeight: pagination.unitWeight };
   }
   const occurredAt: Prisma.DateTimeFilter = {};
   if (pagination.sortBy && pagination.sortBy == "occurredAt")
@@ -74,6 +54,9 @@ export const getProductionBatches = async (
   if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
   if (pagination.occurredFrom || pagination.occurredTo)
     where.occurredAt = occurredAt;
+
+  if (Object.keys(productionEntry).length)
+    where.productionEntry = productionEntry;
 
   buildQuery(pagination, query, where, orderBy);
 

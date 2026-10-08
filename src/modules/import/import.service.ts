@@ -28,28 +28,27 @@ export const getImports = async (
   const where: ImportWhereInput = {};
   const orderBy: Prisma.ImportOrderByWithRelationInput = {};
 
+  const supplier: Prisma.SupplierWhereInput = {};
+  const occurredAt: Prisma.DateTimeFilter = {};
   if (pagination.supplierId) where.supplierId = pagination.supplierId;
   if (pagination.supplierName)
-    where.supplier = {
-      name: {
-        contains: pagination.supplierName,
-        mode: "insensitive",
-      },
+    supplier.name = {
+      contains: pagination.supplierName,
+      mode: "insensitive",
     };
   if (pagination.supplierNumber)
-    where.supplier = {
-      number: {
-        contains: pagination.supplierNumber,
-        mode: "insensitive",
-      },
+    supplier.number = {
+      contains: pagination.supplierNumber,
+      mode: "insensitive",
     };
-const occurredAt: Prisma.DateTimeFilter = {};
-if (pagination.sortBy && pagination.sortBy == "occurredAt")
-  orderBy.occurredAt = pagination.order;
-if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-if (pagination.occurredFrom || pagination.occurredTo)
-  where.occurredAt = occurredAt;
+  if (pagination.sortBy && pagination.sortBy == "occurredAt")
+    orderBy.occurredAt = pagination.order;
+  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
+  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
+  if (pagination.occurredFrom || pagination.occurredTo)
+    where.occurredAt = occurredAt;
+
+  if (Object.keys(supplier).length) where.supplier = supplier;
 
   buildQuery(pagination, query, where, orderBy);
 

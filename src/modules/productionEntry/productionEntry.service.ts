@@ -28,28 +28,25 @@ export const getProductionEntries = async (
   const where: ProductionEntryWhereInput = {};
   const orderBy: Prisma.ProductionEntryOrderByWithRelationInput = {};
   // inject fields into query
+  const productionDay: Prisma.ProductionDayWhereInput = {};
+  const variant: Prisma.VariantWhereInput = {};
   if (pagination.productionDayId)
-    where.productionDay = { id: pagination.productionDayId };
-  if (pagination.variantId) where.variant = { id: pagination.variantId };
+    where.productionDayId = pagination.productionDayId;
+  if (pagination.variantId) where.variantId = pagination.variantId;
   if (pagination.productionDate) {
-    if (where.productionDay)
-      where.productionDay.productionDate = pagination.productionDate;
-    else where.productionDay = { productionDate: pagination.productionDate };
+    productionDay.productionDate = pagination.productionDate;
   }
   if (pagination.itemName) {
-    if (where.variant)
-      where.variant.item = {
-        name: { contains: pagination.itemName, mode: "insensitive" },
-      };
-    else
-      where.variant = {
-        item: { name: { contains: pagination.itemName, mode: "insensitive" } },
-      };
+    variant.item = {
+      name: { contains: pagination.itemName, mode: "insensitive" },
+    };
   }
   if (pagination.unitWeight) {
-    if (where.variant) where.variant.unitWeight = pagination.unitWeight;
-    else where.variant = { unitWeight: pagination.unitWeight };
+    variant.unitWeight = pagination.unitWeight;
   }
+
+  if (Object.keys(productionDay).length) where.productionDay = productionDay;
+  if (Object.keys(variant).length) where.variant = variant;
 
   buildQuery(pagination, query, where, orderBy);
   const data = await prisma.productionEntry.findMany(query);

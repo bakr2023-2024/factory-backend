@@ -28,28 +28,27 @@ export const getExports = async (
   const where: ExportWhereInput = {};
   const orderBy: Prisma.ExportOrderByWithRelationInput = {};
 
+  const customer: Prisma.CustomerWhereInput = {};
+  const occurredAt: Prisma.DateTimeFilter = {};
   if (pagination.customerId) where.customerId = pagination.customerId;
   if (pagination.customerName)
-    where.customer = {
-      number: {
-        contains: pagination.customerName,
-        mode: "insensitive",
-      },
+    customer.name = {
+      contains: pagination.customerName,
+      mode: "insensitive",
     };
   if (pagination.customerNumber)
-    where.customer = {
-      number: {
-        contains: pagination.customerNumber,
-        mode: "insensitive",
-      },
+    customer.number = {
+      contains: pagination.customerNumber,
+      mode: "insensitive",
     };
-  const occurredAt: Prisma.DateTimeFilter = {};
   if (pagination.sortBy && pagination.sortBy == "occurredAt")
     orderBy.occurredAt = pagination.order;
   if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
   if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
   if (pagination.occurredFrom || pagination.occurredTo)
     where.occurredAt = occurredAt;
+
+  if (Object.keys(customer).length) where.customer = customer;
 
   buildQuery(pagination, query, where, orderBy);
 
