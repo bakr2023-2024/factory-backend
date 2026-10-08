@@ -1,6 +1,8 @@
 import { Prisma } from "../db/generated/prisma/client";
 import { paginateConsumptionsDTO } from "../modules/consumption/consumption.validation";
 import { paginateCustomersDTO } from "../modules/customer/customer.validation";
+import { paginateCustomerReturnsDTO } from "../modules/customerReturn/customerReturn.validation";
+import { paginateCustomerReturnItemsDTO } from "../modules/customerReturnItem/customerReturnItem.validation";
 import { paginateExportsDTO } from "../modules/export/export.validation";
 import { paginateExportItemsDTO } from "../modules/exportItem/exportItem.validation";
 import { paginateImportsDTO } from "../modules/import/import.validation";
@@ -11,6 +13,8 @@ import { paginateProductionDaysDTO } from "../modules/productionDay/productionDa
 import { paginateProductionEntriesDTO } from "../modules/productionEntry/productionEntry.validation";
 import { paginateSeasonsDTO } from "../modules/season/season.validation";
 import { paginateSuppliersDTO } from "../modules/supplier/supplier.validation";
+import { paginateSupplierReturnsDTO } from "../modules/supplierReturn/supplierReturn.validation";
+import { paginateSupplierReturnItemsDTO } from "../modules/supplierReturnItem/supplierReturnItem.validation";
 import { paginateVariantsDTO } from "../modules/variant/variant.validation";
 import { paginateWeeksDTO } from "../modules/week/week.validation";
 
@@ -28,7 +32,11 @@ type Query =
   | Prisma.ProductionDayFindManyArgs
   | Prisma.ProductionEntryFindManyArgs
   | Prisma.ProductionBatchFindManyArgs
-  | Prisma.ConsumptionFindManyArgs;
+  | Prisma.ConsumptionFindManyArgs
+  | Prisma.CustomerReturnFindManyArgs
+  | Prisma.CustomerReturnItemFindManyArgs
+  | Prisma.SupplierReturnFindManyArgs
+  | Prisma.SupplierReturnItemFindManyArgs;
 
 type Where =
   | Prisma.ItemWhereInput
@@ -44,7 +52,11 @@ type Where =
   | Prisma.ProductionDayWhereInput
   | Prisma.ProductionEntryWhereInput
   | Prisma.ProductionBatchWhereInput
-  | Prisma.ConsumptionWhereInput;
+  | Prisma.ConsumptionWhereInput
+  | Prisma.CustomerReturnWhereInput
+  | Prisma.CustomerReturnItemWhereInput
+  | Prisma.SupplierReturnWhereInput
+  | Prisma.SupplierReturnItemWhereInput;
 
 type OrderBy =
   | Prisma.ItemOrderByWithRelationInput
@@ -60,7 +72,11 @@ type OrderBy =
   | Prisma.ProductionDayOrderByWithRelationInput
   | Prisma.ProductionEntryOrderByWithRelationInput
   | Prisma.ProductionBatchOrderByWithRelationInput
-  | Prisma.ConsumptionOrderByWithRelationInput;
+  | Prisma.ConsumptionOrderByWithRelationInput
+  | Prisma.CustomerReturnOrderByWithRelationInput
+  | Prisma.CustomerReturnItemOrderByWithRelationInput
+  | Prisma.SupplierReturnOrderByWithRelationInput
+  | Prisma.SupplierReturnItemOrderByWithRelationInput;
 
 type Pagination =
   | paginateItemsDTO
@@ -76,8 +92,11 @@ type Pagination =
   | paginateProductionDaysDTO
   | paginateProductionEntriesDTO
   | paginateProductionBatchesDTO
-  | paginateConsumptionsDTO;
-
+  | paginateConsumptionsDTO
+  | paginateCustomerReturnsDTO
+  | paginateCustomerReturnItemsDTO
+  | paginateSupplierReturnsDTO
+  | paginateSupplierReturnItemsDTO;
 
 export const buildQuery = (
   pagination: Pagination,
@@ -94,7 +113,6 @@ export const buildQuery = (
   if (pagination.createdTo) createdAt.lte = pagination.createdTo;
   if (pagination.createdFrom || pagination.createdTo)
     where.createdAt = createdAt;
-  
   query.skip = (page - 1) * pagination.size;
   query.take = size;
   query.where = where;

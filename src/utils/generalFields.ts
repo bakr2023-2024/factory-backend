@@ -35,8 +35,8 @@ export const fields = {
   quantityParam: strToNum("quantity can only be a positive integer"),
   unitPriceBody: z
     .number()
-    .min(0.01, { message: "price can only be a positive number" }),
-  unitPriceParam: strToNum("price can only be a positive number"),
+    .min(0.01, { message: "unitPrice can only be a positive number" }),
+  unitPriceParam: strToNum("unitPrice can only be a positive number"),
   paginate: (table: Prisma.ModelName) =>
     z.strictObject({
       page: strToNum("page can only be a positive integer").default(1),
@@ -70,7 +70,7 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   ProductionBatch: Object.values(Prisma.ProductionBatchScalarFieldEnum),
   Consumption: Object.values(Prisma.ConsumptionScalarFieldEnum),
   CustomerReturn: Object.values(Prisma.CustomerReturnScalarFieldEnum),
-  SupplierReturn: Object.values(Prisma.SupplierScalarFieldEnum),
+  SupplierReturn: Object.values(Prisma.SupplierReturnScalarFieldEnum),
   SupplierReturnItem: Object.values(Prisma.SupplierReturnItemScalarFieldEnum),
   CustomerReturnItem: Object.values(Prisma.CustomerReturnItemScalarFieldEnum),
 };
