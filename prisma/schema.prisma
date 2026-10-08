@@ -60,14 +60,12 @@ model Variant {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  item                Item                 @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  stockMovements      StockMovement[]
-  importItems         ImportItem[]
-  exportItems         ExportItem[]
-  productionEntries   ProductionEntry[]
-  consumptions        Consumption[]
-  customerReturnItems CustomerReturnItem[]
-  supplierReturnItems SupplierReturnItem[]
+  item              Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  stockMovements    StockMovement[]
+  importItems       ImportItem[]
+  exportItems       ExportItem[]
+  productionEntries ProductionEntry[]
+  consumptions      Consumption[]
 
   @@unique([itemId, unitWeight])
 }
@@ -128,7 +126,7 @@ model SupplierReturn {
 model SupplierReturnItem {
   id               Int      @id @default(autoincrement())
   supplierReturnId Int
-  variantId        Int
+  importItemId     Int      @unique
   quantity         Int
   unitPrice        Decimal  @default(1) @db.Decimal(9, 3)
   notes            String?
@@ -136,9 +134,9 @@ model SupplierReturnItem {
   updatedAt        DateTime @updatedAt
 
   supplierReturn SupplierReturn @relation(fields: [supplierReturnId], references: [id], onDelete: Restrict)
-  variant        Variant        @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  importItem     ImportItem     @relation(fields: [importItemId], references: [id], onDelete: Restrict)
 
-  @@unique([supplierReturnId, variantId])
+  @@unique([supplierReturnId, importItemId])
 }
 
 // --------------------------------------------------
@@ -169,6 +167,8 @@ model ImportItem {
 
   import  Import  @relation(fields: [importId], references: [id], onDelete: Restrict)
   variant Variant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  supplierReturnItem SupplierReturnItem?
 
   @@unique([importId, variantId])
 }
@@ -204,7 +204,7 @@ model CustomerReturn {
 model CustomerReturnItem {
   id               Int      @id @default(autoincrement())
   customerReturnId Int
-  variantId        Int
+  exportItemId     Int      @unique
   quantity         Int
   unitPrice        Decimal  @default(1) @db.Decimal(9, 3)
   notes            String?
@@ -212,9 +212,9 @@ model CustomerReturnItem {
   updatedAt        DateTime @updatedAt
 
   customerReturn CustomerReturn @relation(fields: [customerReturnId], references: [id], onDelete: Restrict)
-  variant        Variant        @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  exportItem     ExportItem     @relation(fields: [exportItemId], references: [id], onDelete: Restrict)
 
-  @@unique([customerReturnId, variantId])
+  @@unique([customerReturnId, exportItemId])
 }
 
 // --------------------------------------------------
@@ -245,6 +245,8 @@ model ExportItem {
 
   export  Export  @relation(fields: [exportId], references: [id], onDelete: Restrict)
   variant Variant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  customerReturnItem CustomerReturnItem?
 
   @@unique([exportId, variantId])
 }
