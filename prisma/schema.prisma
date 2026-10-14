@@ -443,7 +443,7 @@ model Attendance {
   productionDayId Int
   cameAt          DateTime  @default(now())
   leftAt          DateTime?
-  factor          Decimal?  @db.Decimal(3, 2)
+  factor          Decimal   @default(1) @db.Decimal(3, 2)
   notes           String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
