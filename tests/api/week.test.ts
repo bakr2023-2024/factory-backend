@@ -149,7 +149,7 @@ describe("GET /weeks/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -191,7 +191,7 @@ describe("POST /weeks", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["seasonId"],
       },
       {
@@ -242,7 +242,7 @@ describe("PATCH /weeks/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -269,7 +269,7 @@ describe("PATCH /weeks/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["seasonId"],
       },
     ]);
@@ -316,7 +316,7 @@ describe("DELETE /weeks/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

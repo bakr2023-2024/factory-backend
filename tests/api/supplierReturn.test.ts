@@ -308,7 +308,7 @@ describe("GET /supplierReturns/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -355,12 +355,12 @@ describe("POST /supplierReturns", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["supplierId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["productionDayId"],
       },
       {
@@ -429,7 +429,7 @@ describe("PATCH /supplierReturns/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -456,7 +456,7 @@ describe("PATCH /supplierReturns/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["supplierId"],
       },
     ]);
@@ -524,7 +524,7 @@ describe("DELETE /supplierReturns/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

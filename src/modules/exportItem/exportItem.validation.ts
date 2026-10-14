@@ -3,48 +3,48 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateExportItems = {
   query: fields.paginate("ExportItem").extend({
-    customerId: fields.idParam.optional(),
-    variantId: fields.idParam.optional(),
-    exportId: fields.idParam.optional(),
-    itemId: fields.idParam.optional(),
+    customerId: fields.integerParam().optional(),
+    variantId: fields.integerParam().optional(),
+    exportId: fields.integerParam().optional(),
+    itemId: fields.integerParam().optional(),
     customerName: fields.name.optional(),
     customerNumber: fields.number.optional(),
     itemName: fields.name.optional(),
-    minPrice: fields.unitPriceParam.optional(),
-    maxPrice: fields.unitPriceParam.optional(),
+    minPrice: fields.doubleParam().optional(),
+    maxPrice: fields.doubleParam().optional(),
     occurredFrom:fields.dateTime.optional(),
     occurredTo:fields.dateTime.optional()
   }),
 };
 export const getExportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createExportItem = {
   body: z.strictObject({
-    exportId: fields.idBody,
-    variantId: fields.idBody,
-    quantity: fields.quantity,
-    unitPrice: fields.unitPriceBody.optional(),
+    exportId: fields.integerBody(),
+    variantId: fields.integerBody(),
+    quantity: fields.integerBody(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const updateExportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    exportId: fields.idBody.optional(),
-    variantId: fields.idBody.optional(),
-    quantity: fields.quantity.optional(),
-    unitPrice: fields.unitPriceBody.optional(),
+    exportId: fields.integerBody().optional(),
+    variantId: fields.integerBody().optional(),
+    quantity: fields.integerBody().optional(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteExportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

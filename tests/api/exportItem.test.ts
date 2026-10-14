@@ -125,7 +125,7 @@ describe("GET /exportItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -166,22 +166,22 @@ describe("POST /exportItems", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["exportId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["variantId"],
       },
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
       {
         key: "body",
-        message: "unitPrice can only be a positive number",
+        message: "value can only be a positive number",
         path: ["unitPrice"],
       },
     ]);
@@ -238,7 +238,7 @@ describe("PATCH /exportItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -263,22 +263,22 @@ describe("PATCH /exportItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["exportId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["variantId"],
       },
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
       {
         key: "body",
-        message: "unitPrice can only be a positive number",
+        message: "value can only be a positive number",
         path: ["unitPrice"],
       },
     ]);
@@ -330,7 +330,7 @@ describe("DELETE /exportItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

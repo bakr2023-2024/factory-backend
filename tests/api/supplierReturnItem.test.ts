@@ -384,7 +384,7 @@ describe("GET /supplierReturnItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -430,22 +430,22 @@ describe("POST /supplierReturnItems", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["supplierReturnId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["importItemId"],
       },
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
       {
         key: "body",
-        message: "unitPrice can only be a positive number",
+        message: "value can only be a positive number",
         path: ["unitPrice"],
       },
     ]);
@@ -493,7 +493,7 @@ describe("PATCH /supplierReturnItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -520,7 +520,7 @@ describe("PATCH /supplierReturnItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
     ]);
@@ -572,7 +572,7 @@ describe("DELETE /supplierReturnItems/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

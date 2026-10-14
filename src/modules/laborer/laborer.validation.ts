@@ -9,7 +9,7 @@ export const paginateLaborers = {
 };
 export const getLaborer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createLaborer = {
@@ -21,7 +21,7 @@ export const createLaborer = {
 };
 export const updateLaborer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +31,7 @@ export const updateLaborer = {
 };
 export const deleteLaborer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

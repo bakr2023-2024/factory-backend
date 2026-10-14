@@ -186,7 +186,7 @@ describe("GET /exports/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -222,12 +222,12 @@ describe("POST /exports", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["productionDayId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["customerId"],
       },
     ]);
@@ -284,7 +284,7 @@ describe("PATCH /exports/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -309,7 +309,7 @@ describe("PATCH /exports/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["customerId"],
       },
     ]);
@@ -371,7 +371,7 @@ describe("DELETE /exports/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

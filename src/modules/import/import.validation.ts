@@ -3,9 +3,9 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateImports = {
   query: fields.paginate("Import").extend({
-    productionDayId: fields.idParam.optional(),
+    productionDayId: fields.integerParam().optional(),
     productionDate: fields.date.optional(),
-    supplierId: fields.idParam.optional(),
+    supplierId: fields.integerParam().optional(),
     supplierName: fields.name.optional(),
     supplierNumber: fields.number.optional(),
     occurredFrom: fields.dateTime.optional(),
@@ -14,31 +14,31 @@ export const paginateImports = {
 };
 export const getImport = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createImport = {
   body: z.strictObject({
-    productionDayId: fields.idBody,
-    supplierId: fields.idBody,
+    productionDayId: fields.integerBody(),
+    supplierId: fields.integerBody(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
 export const updateImport = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    productionDayId: fields.idBody.optional(),
-    supplierId: fields.idBody.optional(),
+    productionDayId: fields.integerBody().optional(),
+    supplierId: fields.integerBody().optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteImport = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

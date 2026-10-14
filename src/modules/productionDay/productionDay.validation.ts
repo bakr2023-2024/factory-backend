@@ -3,7 +3,7 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateProductionDays = {
   query: fields.paginate("ProductionDay").extend({
-    weekId: fields.idParam.optional(),
+    weekId: fields.integerParam().optional(),
     productionDate: fields.date.optional(),
     startedFrom: fields.dateTime.optional(),
     startedTo: fields.dateTime.optional(),
@@ -13,12 +13,12 @@ export const paginateProductionDays = {
 };
 export const getProductionDay = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createProductionDay = {
   body: z.strictObject({
-    weekId: fields.idBody,
+    weekId: fields.integerBody(),
     productionDate: fields.date,
     startedAt: fields.dateTime,
     endedAt: fields.dateTime.optional(),
@@ -27,10 +27,10 @@ export const createProductionDay = {
 };
 export const updateProductionDay = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    weekId: fields.idBody.optional(),
+    weekId: fields.integerBody().optional(),
     productionDate: fields.date.optional(),
     startedAt: fields.dateTime.optional(),
     endedAt: fields.dateTime.optional(),
@@ -39,7 +39,7 @@ export const updateProductionDay = {
 };
 export const deleteProductionDay = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

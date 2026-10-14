@@ -14,7 +14,7 @@ export const paginateSeasons = {
 };
 export const getSeason = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createSeason = {
@@ -27,7 +27,7 @@ export const createSeason = {
 };
 export const updateSeason = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
     startDate: fields.date.optional(),
@@ -38,7 +38,7 @@ export const updateSeason = {
 };
 export const deleteSeason = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

@@ -6,13 +6,13 @@ export const paginateStockMovements = {
   query: fields
     .paginate("StockMovement")
     .extend({
-      variantId: fields.idParam.optional(),
+      variantId: fields.integerParam().optional(),
       occurredFrom: fields.dateTime.optional(),
       occurredTo: fields.dateTime.optional(),
       itemName: fields.name.optional(),
       type: z.enum(Object.values(StockMovementType)).optional(),
-      typeRef: fields.idParam.optional(),
-      quantityChanged: fields.quantityParam.optional(),
+      typeRef: fields.integerParam().optional(),
+      quantityChanged: fields.integerParam().optional(),
     })
     .refine((data) => !data.typeRef || (data.typeRef && data.type), {
       message: "A type is needed for typeRef to reference",
@@ -21,7 +21,7 @@ export const paginateStockMovements = {
 };
 export const getStockMovement = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export type paginateStockMovementsDTO = z.infer<

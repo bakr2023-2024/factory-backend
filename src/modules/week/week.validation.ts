@@ -4,7 +4,7 @@ import { fields } from "../../utils/generalFields";
 export const paginateWeeks = {
   query: fields.paginate("Week").extend({
     seasonName: fields.name.optional(),
-    seasonId: fields.idParam.optional(),
+    seasonId: fields.integerParam().optional(),
     startedFrom: fields.date.optional(),
     startedTo: fields.date.optional(),
     endedFrom: fields.date.optional(),
@@ -13,12 +13,12 @@ export const paginateWeeks = {
 };
 export const getWeek = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createWeek = {
   body: z.strictObject({
-    seasonId: fields.idBody,
+    seasonId: fields.integerBody(),
     startDate: fields.date.optional(),
     endDate: fields.date.optional(),
     notes: z.string().optional(),
@@ -26,10 +26,10 @@ export const createWeek = {
 };
 export const updateWeek = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    seasonId: fields.idBody.optional(),
+    seasonId: fields.integerBody().optional(),
     startDate: fields.date.optional(),
     endDate: fields.date.optional(),
     notes: z.string().optional(),
@@ -37,7 +37,7 @@ export const updateWeek = {
 };
 export const deleteWeek = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

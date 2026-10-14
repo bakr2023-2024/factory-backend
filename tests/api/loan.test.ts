@@ -235,7 +235,7 @@ describe("GET /loans/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -266,7 +266,7 @@ describe("POST /loans", () => {
     const res: ErrorResponse = await auth().post("/loans").send({
       laborerId: -1,
       seasonId: -1,
-      loanAmount: 300,
+      loanAmount: -300,
       loanedAt: "bad date",
     });
 
@@ -275,13 +275,18 @@ describe("POST /loans", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["laborerId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["seasonId"],
+      },
+      {
+        key: "body",
+        message: "value can only be a positive number",
+        path: ["loanAmount"],
       },
       {
         key: "body",
@@ -339,7 +344,7 @@ describe("PATCH /loans/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -357,15 +362,20 @@ describe("PATCH /loans/:id", () => {
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .patch(`/loans/${seed.loans[0].id}`)
-      .send({ laborerId: -1 });
+      .send({ laborerId: -1, loanAmount: -300 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["laborerId"],
+      },
+      {
+        key: "body",
+        message: "value can only be a positive number",
+        path: ["loanAmount"],
       },
     ]);
   });
@@ -422,7 +432,7 @@ describe("DELETE /loans/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

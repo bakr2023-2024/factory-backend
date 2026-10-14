@@ -3,38 +3,38 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateProductionEntries = {
   query: fields.paginate("ProductionEntry").extend({
-    productionDayId: fields.idParam.optional(),
-    variantId: fields.idParam.optional(),
+    productionDayId: fields.integerParam().optional(),
+    variantId: fields.integerParam().optional(),
     productionDate: fields.date.optional(),
     itemName: fields.name.optional(),
-    unitWeight: fields.unitWeightParam.optional(),
+    unitWeight: fields.doubleParam().optional(),
   }),
 };
 export const getProductionEntry = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createProductionEntry = {
   body: z.strictObject({
-    productionDayId: fields.idBody,
-    variantId: fields.idBody,
+    productionDayId: fields.integerBody(),
+    variantId: fields.integerBody(),
     notes: z.string().optional(),
   }),
 };
 export const updateProductionEntry = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    productionDayId: fields.idBody.optional(),
-    variantId: fields.idBody.optional(),
+    productionDayId: fields.integerBody().optional(),
+    variantId: fields.integerBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteProductionEntry = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

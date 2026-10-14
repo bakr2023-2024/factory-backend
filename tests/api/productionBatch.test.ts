@@ -338,7 +338,7 @@ describe("GET /productionBatches/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -388,12 +388,12 @@ describe("POST /productionBatches", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["productionEntryId"],
       },
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
       {
@@ -443,7 +443,7 @@ describe("PATCH /productionBatches/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -470,7 +470,7 @@ describe("PATCH /productionBatches/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
     ]);
@@ -515,7 +515,7 @@ describe("DELETE /productionBatches/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

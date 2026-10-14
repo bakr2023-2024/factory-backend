@@ -310,7 +310,7 @@ describe("GET /consumptions/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -355,12 +355,12 @@ describe("POST /consumptions", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["productionDayId"],
       },
       {
         key: "body",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["variantId"],
       },
       {
@@ -370,7 +370,7 @@ describe("POST /consumptions", () => {
       },
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
     ]);
@@ -417,7 +417,7 @@ describe("PATCH /consumptions/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);
@@ -442,7 +442,7 @@ describe("PATCH /consumptions/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "body",
-        message: "quantity can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["quantity"],
       },
     ]);
@@ -487,7 +487,7 @@ describe("DELETE /consumptions/:id", () => {
     expect(res.body.cause).toEqual([
       {
         key: "params",
-        message: "ID can only be a positive integer",
+        message: "value can only be a positive integer",
         path: ["id"],
       },
     ]);

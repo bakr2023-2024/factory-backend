@@ -9,7 +9,7 @@ export const paginateCustomers = {
 };
 export const getCustomer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createCustomer = {
@@ -21,7 +21,7 @@ export const createCustomer = {
 };
 export const updateCustomer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +31,7 @@ export const updateCustomer = {
 };
 export const deleteCustomer = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

@@ -9,7 +9,7 @@ export const paginateSuppliers = {
 };
 export const getSupplier = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createSupplier = {
@@ -21,7 +21,7 @@ export const createSupplier = {
 };
 export const updateSupplier = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +31,7 @@ export const updateSupplier = {
 };
 export const deleteSupplier = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

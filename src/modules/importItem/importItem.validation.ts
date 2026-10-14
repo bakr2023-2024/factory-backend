@@ -3,46 +3,46 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateImportItems = {
   query: fields.paginate("ImportItem").extend({
-    supplierId: fields.idParam.optional(),
-    variantId: fields.idParam.optional(),
-    importId: fields.idParam.optional(),
-    itemId: fields.idParam.optional(),
+    supplierId: fields.integerParam().optional(),
+    variantId: fields.integerParam().optional(),
+    importId: fields.integerParam().optional(),
+    itemId: fields.integerParam().optional(),
     supplierName: fields.name.optional(),
     supplierNumber: fields.name.optional(),
     itemName: fields.name.optional(),
-    minPrice: fields.unitPriceParam.optional(),
-    maxPrice: fields.unitPriceParam.optional(),
+    minPrice: fields.doubleParam().optional(),
+    maxPrice: fields.doubleParam().optional(),
   }),
 };
 export const getImportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createImportItem = {
   body: z.strictObject({
-    importId: fields.idBody,
-    variantId: fields.idBody,
-    quantity: fields.quantity,
-    unitPrice: fields.unitPriceBody.optional(),
+    importId: fields.integerBody(),
+    variantId: fields.integerBody(),
+    quantity: fields.integerBody(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const updateImportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    importId: fields.idBody.optional(),
-    variantId: fields.idBody.optional(),
-    quantity: fields.quantity.optional(),
-    unitPrice: fields.unitPriceBody.optional(),
+    importId: fields.integerBody().optional(),
+    variantId: fields.integerBody().optional(),
+    quantity: fields.integerBody().optional(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteImportItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

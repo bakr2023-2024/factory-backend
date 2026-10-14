@@ -13,17 +13,10 @@ const strToNum = (message: string, isInt = false) => {
     .transform((val) => Number(val));
 };
 export const fields = {
-  idParam: strToNum("ID can only be a positive integer", true),
-  idBody: z
-    .number()
-    .int()
-    .min(1, { message: "ID can only be a positive integer" }),
   date: z.iso
     .date({ message: "Invalid Date" })
     .transform((s) => new Date(`${s}T00:00:00.000Z`)),
   dateTime: z.iso.datetime({ message: "Invalid DateTime" }),
-  unitWeight: z.number().min(0.1, { message: "unit weight must be above 0" }),
-  unitWeightParam: strToNum("unitWeight can only be a positive number"),
   name: z
     .string()
     .min(3, { message: "Name is too short" })
@@ -32,20 +25,14 @@ export const fields = {
     .string()
     .min(5, { message: "Number is too short" })
     .max(40, { message: "Number is too long" }),
-  quantity: z
-    .number()
-    .int()
-    .min(1, { message: "quantity can only be a positive integer" }),
-  quantityParam: strToNum("quantity can only be a positive integer", true),
-  factor: z
-    .number()
-    .int()
-    .min(0, { message: "factor can only be a positive number" }),
-  factorParam: strToNum("factor can only be a positive number"),
-  unitPriceBody: z
-    .number()
-    .min(0.01, { message: "unitPrice can only be a positive number" }),
-  unitPriceParam: strToNum("unitPrice can only be a positive number"),
+  doubleBody: (message: string = "value can only be a positive number") =>
+    z.number().min(0, { message }),
+  integerBody: (message: string = "value can only be a positive integer") =>
+    z.number().int().min(0, { message }),
+  doubleParam: (message: string = "value can only be a positive number") =>
+    strToNum(message),
+  integerParam: (message: string = "value can only be a positive integer") =>
+    strToNum(message),
   paginate: (table: Prisma.ModelName) =>
     z.strictObject({
       page: strToNum("page can only be a positive integer").default(1),

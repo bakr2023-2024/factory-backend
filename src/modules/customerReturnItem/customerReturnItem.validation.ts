@@ -3,47 +3,47 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateCustomerReturnItems = {
   query: fields.paginate("CustomerReturnItem").extend({
-    customerReturnId: fields.idParam.optional(),
-    customerId: fields.idParam.optional(),
-    exportItemId: fields.idParam.optional(),
+    customerReturnId: fields.integerParam().optional(),
+    customerId: fields.integerParam().optional(),
+    exportItemId: fields.integerParam().optional(),
     customerName: fields.name.optional(),
     customerNumber: fields.number.optional(),
     itemName: fields.name.optional(),
-    unitWeight: fields.unitWeightParam.optional(),
-    quantity: fields.quantityParam.optional(),
-    minPrice: fields.unitPriceParam.optional(),
-    maxPrice: fields.unitPriceParam.optional(),
+    unitWeight: fields.doubleParam().optional(),
+    quantity: fields.integerParam().optional(),
+    minPrice: fields.doubleParam().optional(),
+    maxPrice: fields.doubleParam().optional(),
   }),
 };
 export const getCustomerReturnItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createCustomerReturnItem = {
   body: z.strictObject({
-    customerReturnId: fields.idBody,
-    exportItemId: fields.idBody,
-    quantity: fields.quantity,
-    unitPrice: fields.unitPriceBody.optional(),
+    customerReturnId: fields.integerBody(),
+    exportItemId: fields.integerBody(),
+    quantity: fields.integerBody(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const updateCustomerReturnItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    customerReturnId: fields.idBody.optional(),
-    exportItemId: fields.idBody.optional(),
-    quantity: fields.quantity.optional(),
-    unitPrice: fields.unitPriceBody.optional(),
+    customerReturnId: fields.integerBody().optional(),
+    exportItemId: fields.integerBody().optional(),
+    quantity: fields.integerBody().optional(),
+    unitPrice: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteCustomerReturnItem = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

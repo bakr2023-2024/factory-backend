@@ -3,45 +3,45 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateConsumptions = {
   query: fields.paginate("Consumption").extend({
-    productionDayId: fields.idParam.optional(),
-    variantId: fields.idParam.optional(),
+    productionDayId: fields.integerParam().optional(),
+    variantId: fields.integerParam().optional(),
     productionDate: fields.date.optional(),
     occurredFrom: fields.dateTime.optional(),
     occurredTo: fields.dateTime.optional(),
     itemName: fields.name.optional(),
-    unitWeight: fields.unitWeightParam.optional(),
-    quantity: fields.quantityParam.optional(),
+    unitWeight: fields.doubleParam().optional(),
+    quantity: fields.integerParam().optional(),
   }),
 };
 export const getConsumption = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createConsumption = {
   body: z.strictObject({
-    productionDayId: fields.idBody,
-    variantId: fields.idBody,
+    productionDayId: fields.integerBody(),
+    variantId: fields.integerBody(),
     occurredAt: fields.dateTime,
-    quantity: fields.quantity,
+    quantity: fields.integerBody(),
     notes: z.string().optional(),
   }),
 };
 export const updateConsumption = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    productionDayId: fields.idBody.optional(),
-    variantId: fields.idBody.optional(),
+    productionDayId: fields.integerBody().optional(),
+    variantId: fields.integerBody().optional(),
     occurredAt: fields.dateTime.optional(),
-    quantity: fields.quantity.optional(),
+    quantity: fields.integerBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteConsumption = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

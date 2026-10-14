@@ -3,36 +3,36 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateVariants = {
   query: fields.paginate("Variant").extend({
-    itemId: fields.idParam.optional(),
+    itemId: fields.integerParam().optional(),
     itemName: fields.name.optional(),
-    unitWeight: fields.unitWeightParam.optional(),
+    unitWeight: fields.doubleParam().optional(),
   }),
 };
 export const getVariant = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createVariant = {
   body: z.strictObject({
-    itemId: fields.idBody,
-    unitWeight: fields.unitWeight.default(1),
+    itemId: fields.integerBody(),
+    unitWeight: fields.doubleBody().default(1),
     notes: z.string().optional(),
   }),
 };
 export const updateVariant = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    itemId: fields.idBody.optional(),
-    unitWeight: fields.unitWeight.optional(),
+    itemId: fields.integerBody().optional(),
+    unitWeight: fields.doubleBody().optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteVariant = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 

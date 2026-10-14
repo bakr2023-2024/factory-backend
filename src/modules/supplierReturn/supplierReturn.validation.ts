@@ -3,42 +3,42 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateSupplierReturns = {
   query: fields.paginate("SupplierReturn").extend({
-    productionDayId: fields.idParam.optional(),
+    productionDayId: fields.integerParam().optional(),
     productionDate: fields.date.optional(),
     supplierName: fields.name.optional(),
     supplierNumber: fields.number.optional(),
-    supplierId: fields.idParam.optional(),
+    supplierId: fields.integerParam().optional(),
     occurredFrom: fields.dateTime.optional(),
     occurredTo: fields.dateTime.optional(),
   }),
 };
 export const getSupplierReturn = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 export const createSupplierReturn = {
   body: z.strictObject({
-    supplierId: fields.idBody,
-    productionDayId: fields.idBody,
+    supplierId: fields.integerBody(),
+    productionDayId: fields.integerBody(),
     occurredAt: fields.dateTime,
     notes: z.string().optional(),
   }),
 };
 export const updateSupplierReturn = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
   body: z.strictObject({
-    supplierId: fields.idBody.optional(),
-    productionDayId: fields.idBody.optional(),
+    supplierId: fields.integerBody().optional(),
+    productionDayId: fields.integerBody().optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteSupplierReturn = {
   params: z.strictObject({
-    id: fields.idParam,
+    id: fields.integerParam(),
   }),
 };
 
