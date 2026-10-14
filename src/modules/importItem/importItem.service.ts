@@ -1,4 +1,8 @@
-import { ImportItem, Prisma } from "../../db/generated/prisma/client";
+import {
+  ImportItem,
+  Prisma,
+  StockMovementType,
+} from "../../db/generated/prisma/client";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -6,7 +10,12 @@ import {
   NotFoundException,
 } from "../../utils/exceptions";
 import { PaginationType } from "../../utils/types/types";
-import { buildQuery } from "../../utils/utils";
+import {
+  buildQuery,
+  createStockMovement,
+  deleteStockMovement,
+  updateStockMovement,
+} from "../../utils/utils";
 import {
   createImportItemBodyDTO,
   deleteImportItemParamsDTO,
@@ -44,10 +53,16 @@ export const getImportItems = async (
       },
     };
   }
-  if(pagination.supplierNumber){
-    if(importe.supplier)
-      importe.supplier.number = {contains:pagination.supplierNumber,mode:"insensitive"}
-    else importe.supplier = {number:{contains:pagination.supplierNumber,mode:"insensitive"}}
+  if (pagination.supplierNumber) {
+    if (importe.supplier)
+      importe.supplier.number = {
+        contains: pagination.supplierNumber,
+        mode: "insensitive",
+      };
+    else
+      importe.supplier = {
+        number: { contains: pagination.supplierNumber, mode: "insensitive" },
+      };
   }
   if (pagination.itemName) {
     if (variant.item)
@@ -100,8 +115,20 @@ export const createImportItem = async (
   body: createImportItemBodyDTO,
 ): Promise<ImportItem> => {
   try {
-    const importItem = await prisma.importItem.create({ data: body });
-    return importItem;
+    return await prisma.$transaction(async (tx) => {
+      const importItem = await prisma.importItem.create({
+        data: body,
+        include: { import: true },
+      });
+      await createStockMovement(tx, {
+        variant: { connect: { id: importItem.variantId } },
+        productionDay: { connect: { id: importItem.import.productionDayId } },
+        type: StockMovementType.IMPORT_ITEM,
+        typeRef: importItem.id,
+        quantityChanged: importItem.quantity,
+      });
+      return importItem;
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
@@ -115,11 +142,20 @@ export const updateImportItem = async (
   body: updateImportItemBodyDTO,
 ): Promise<ImportItem> => {
   try {
-    const importItem = await prisma.importItem.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const importItem = await prisma.importItem.update({
+        where: { id: params.id },
+        data: body,
+      });
+      if (body.quantity !== undefined)
+        await updateStockMovement(
+          tx,
+          StockMovementType.IMPORT_ITEM,
+          importItem.id,
+          body.quantity,
+        );
+      return importItem;
     });
-    return importItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -134,10 +170,17 @@ export const deleteImportItem = async (
   params: deleteImportItemParamsDTO,
 ): Promise<ImportItem> => {
   try {
-    const importItem = await prisma.importItem.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const importItem = await prisma.importItem.delete({
+        where: { id: params.id },
+      });
+      await deleteStockMovement(
+        tx,
+        StockMovementType.IMPORT_ITEM,
+        importItem.id,
+      );
+      return importItem;
     });
-    return importItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")

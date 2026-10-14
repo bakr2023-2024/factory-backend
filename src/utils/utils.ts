@@ -1,4 +1,7 @@
-import { Prisma } from "../db/generated/prisma/client";
+import {
+  Prisma,
+  StockMovementType,
+} from "../db/generated/prisma/client";
 import { paginateConsumptionsDTO } from "../modules/consumption/consumption.validation";
 import { paginateCustomersDTO } from "../modules/customer/customer.validation";
 import { paginateCustomerReturnsDTO } from "../modules/customerReturn/customerReturn.validation";
@@ -12,11 +15,15 @@ import { paginateProductionBatchesDTO } from "../modules/productionBatch/product
 import { paginateProductionDaysDTO } from "../modules/productionDay/productionDay.validation";
 import { paginateProductionEntriesDTO } from "../modules/productionEntry/productionEntry.validation";
 import { paginateSeasonsDTO } from "../modules/season/season.validation";
+import { paginateStockMovementsDTO } from "../modules/stockMovement/stockMovement.validation";
 import { paginateSuppliersDTO } from "../modules/supplier/supplier.validation";
 import { paginateSupplierReturnsDTO } from "../modules/supplierReturn/supplierReturn.validation";
 import { paginateSupplierReturnItemsDTO } from "../modules/supplierReturnItem/supplierReturnItem.validation";
 import { paginateVariantsDTO } from "../modules/variant/variant.validation";
 import { paginateWeeksDTO } from "../modules/week/week.validation";
+import {
+  StockMovementCreateInput,
+} from "../db/generated/prisma/models";
 
 type Query =
   | Prisma.ItemFindManyArgs
@@ -36,7 +43,8 @@ type Query =
   | Prisma.CustomerReturnFindManyArgs
   | Prisma.CustomerReturnItemFindManyArgs
   | Prisma.SupplierReturnFindManyArgs
-  | Prisma.SupplierReturnItemFindManyArgs;
+  | Prisma.SupplierReturnItemFindManyArgs
+  | Prisma.StockMovementFindManyArgs;
 
 type Where =
   | Prisma.ItemWhereInput
@@ -56,7 +64,8 @@ type Where =
   | Prisma.CustomerReturnWhereInput
   | Prisma.CustomerReturnItemWhereInput
   | Prisma.SupplierReturnWhereInput
-  | Prisma.SupplierReturnItemWhereInput;
+  | Prisma.SupplierReturnItemWhereInput
+  | Prisma.StockMovementWhereInput;
 
 type OrderBy =
   | Prisma.ItemOrderByWithRelationInput
@@ -76,7 +85,8 @@ type OrderBy =
   | Prisma.CustomerReturnOrderByWithRelationInput
   | Prisma.CustomerReturnItemOrderByWithRelationInput
   | Prisma.SupplierReturnOrderByWithRelationInput
-  | Prisma.SupplierReturnItemOrderByWithRelationInput;
+  | Prisma.SupplierReturnItemOrderByWithRelationInput
+  | Prisma.StockMovementOrderByWithRelationInput;
 
 type Pagination =
   | paginateItemsDTO
@@ -96,7 +106,8 @@ type Pagination =
   | paginateCustomerReturnsDTO
   | paginateCustomerReturnItemsDTO
   | paginateSupplierReturnsDTO
-  | paginateSupplierReturnItemsDTO;
+  | paginateSupplierReturnItemsDTO
+  | paginateStockMovementsDTO;
 
 export const buildQuery = (
   pagination: Pagination,
@@ -117,4 +128,52 @@ export const buildQuery = (
   query.take = size;
   query.where = where;
   query.orderBy = orderBy;
+};
+export const createStockMovement = async (
+  tx: Prisma.TransactionClient,
+  data: StockMovementCreateInput,
+) => {
+  const stockMovement = await tx.stockMovement.create({ data });
+  await tx.variant.update({
+    where: { id: stockMovement.variantId },
+    data: { currentStock: { increment: stockMovement.quantityChanged } },
+  });
+};
+
+export const updateStockMovement = async (
+  tx: Prisma.TransactionClient,
+  type: StockMovementType,
+  typeRef: number,
+  quantityChanged: number,
+) => {
+  const oldStockMovement = await tx.stockMovement.findUniqueOrThrow({
+    where: { type_typeRef: { type, typeRef } },
+  });
+  const stockMovement = await tx.stockMovement.update({
+    where: { type_typeRef: { type, typeRef } },
+    data: { quantityChanged },
+  });
+  await tx.variant.update({
+    where: {
+      id: stockMovement.variantId,
+    },
+    data: {
+      currentStock: {
+        increment: quantityChanged - oldStockMovement.quantityChanged,
+      },
+    },
+  });
+};
+export const deleteStockMovement = async (
+  tx: Prisma.TransactionClient,
+  type: StockMovementType,
+  typeRef: number,
+) => {
+  const stockMovement = await tx.stockMovement.delete({
+    where: { type_typeRef: { type, typeRef } },
+  });
+  await tx.variant.update({
+    where: { id: stockMovement.variantId },
+    data: { currentStock: { decrement: stockMovement.quantityChanged } },
+  });
 };

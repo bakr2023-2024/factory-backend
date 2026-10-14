@@ -1,4 +1,8 @@
-import { ProductionBatch, Prisma } from "../../db/generated/prisma/client";
+import {
+  ProductionBatch,
+  Prisma,
+  StockMovementType,
+} from "../../db/generated/prisma/client";
 import {
   ProductionBatchFindManyArgs,
   ProductionBatchWhereInput,
@@ -9,7 +13,12 @@ import {
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
-import { buildQuery } from "../../utils/utils";
+import {
+  buildQuery,
+  createStockMovement,
+  deleteStockMovement,
+  updateStockMovement,
+} from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
   createProductionBatchBodyDTO,
@@ -85,8 +94,22 @@ export const createProductionBatch = async (
   body: createProductionBatchBodyDTO,
 ): Promise<ProductionBatch> => {
   try {
-    const productionBatch = await prisma.productionBatch.create({ data: body });
-    return productionBatch;
+    return await prisma.$transaction(async (tx) => {
+      const productionBatch = await prisma.productionBatch.create({
+        data: body,
+        include: { productionEntry: true },
+      });
+      await createStockMovement(tx, {
+        variant: { connect: { id: productionBatch.productionEntry.variantId } },
+        productionDay: {
+          connect: { id: productionBatch.productionEntry.productionDayId },
+        },
+        type: StockMovementType.PRODUCTION_BATCH,
+        typeRef: productionBatch.id,
+        quantityChanged: productionBatch.quantity,
+      });
+      return productionBatch;
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
@@ -100,11 +123,20 @@ export const updateProductionBatch = async (
   body: updateProductionBatchBodyDTO,
 ): Promise<ProductionBatch> => {
   try {
-    const productionBatch = await prisma.productionBatch.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const productionBatch = await prisma.productionBatch.update({
+        where: { id: params.id },
+        data: body,
+      });
+      if (body.quantity)
+        await updateStockMovement(
+          tx,
+          StockMovementType.SUPPLIER_RETURN_ITEM,
+          productionBatch.id,
+          productionBatch.quantity,
+        );
+      return productionBatch;
     });
-    return productionBatch;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -119,10 +151,17 @@ export const deleteProductionBatch = async (
   params: deleteProductionBatchParamsDTO,
 ): Promise<ProductionBatch> => {
   try {
-    const productionBatch = await prisma.productionBatch.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const productionBatch = await prisma.productionBatch.delete({
+        where: { id: params.id },
+      });
+      await deleteStockMovement(
+        tx,
+        StockMovementType.PRODUCTION_BATCH,
+        productionBatch.id,
+      );
+      return productionBatch;
     });
-    return productionBatch;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")

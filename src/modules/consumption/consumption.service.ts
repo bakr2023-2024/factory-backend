@@ -1,4 +1,8 @@
-import { Consumption, Prisma } from "../../db/generated/prisma/client";
+import {
+  Consumption,
+  Prisma,
+  StockMovementType,
+} from "../../db/generated/prisma/client";
 import {
   ConsumptionFindManyArgs,
   ConsumptionWhereInput,
@@ -10,7 +14,12 @@ import {
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
-import { buildQuery } from "../../utils/utils";
+import {
+  buildQuery,
+  createStockMovement,
+  deleteStockMovement,
+  updateStockMovement,
+} from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
   createConsumptionBodyDTO,
@@ -79,8 +88,18 @@ export const createConsumption = async (
   body: createConsumptionBodyDTO,
 ): Promise<Consumption> => {
   try {
-    const consumption = await prisma.consumption.create({ data: body });
-    return consumption;
+    return await prisma.$transaction(async (tx) => {
+      const consumption = await tx.consumption.create({ data: body });
+      await createStockMovement(tx, {
+        variant: { connect: { id: consumption.variantId } },
+        occurredAt: consumption.occurredAt,
+        productionDay: {connect:{id:consumption.productionDayId}},
+        quantityChanged: -consumption.quantity,
+        type: StockMovementType.CONSUMPTION,
+        typeRef: consumption.id,
+      });
+      return consumption;
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
@@ -96,11 +115,20 @@ export const updateConsumption = async (
   body: updateConsumptionBodyDTO,
 ): Promise<Consumption> => {
   try {
-    const consumption = await prisma.consumption.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const consumption = await prisma.consumption.update({
+        where: { id: params.id },
+        data: body,
+      });
+      if (body.quantity !== undefined)
+        await updateStockMovement(
+          tx,
+          StockMovementType.CONSUMPTION,
+          consumption.id,
+          -consumption.quantity,
+        );
+      return consumption;
     });
-    return consumption;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -117,10 +145,17 @@ export const deleteConsumption = async (
   params: deleteConsumptionParamsDTO,
 ): Promise<Consumption> => {
   try {
-    const consumption = await prisma.consumption.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const consumption = await prisma.consumption.delete({
+        where: { id: params.id },
+      });
+      await deleteStockMovement(
+        tx,
+        StockMovementType.CONSUMPTION,
+        consumption.id,
+      );
+      return consumption;
     });
-    return consumption;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")

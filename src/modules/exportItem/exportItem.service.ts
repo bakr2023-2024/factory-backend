@@ -1,4 +1,8 @@
-import { ExportItem, Prisma } from "../../db/generated/prisma/client";
+import {
+  ExportItem,
+  Prisma,
+  StockMovementType,
+} from "../../db/generated/prisma/client";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -6,7 +10,12 @@ import {
   NotFoundException,
 } from "../../utils/exceptions";
 import { PaginationType } from "../../utils/types/types";
-import { buildQuery } from "../../utils/utils";
+import {
+  buildQuery,
+  createStockMovement,
+  deleteStockMovement,
+  updateStockMovement,
+} from "../../utils/utils";
 import {
   createExportItemBodyDTO,
   deleteExportItemParamsDTO,
@@ -105,8 +114,20 @@ export const createExportItem = async (
   body: createExportItemBodyDTO,
 ): Promise<ExportItem> => {
   try {
-    const exportItem = await prisma.exportItem.create({ data: body });
-    return exportItem;
+    return await prisma.$transaction(async (tx) => {
+      const exportItem = await prisma.exportItem.create({
+        data: body,
+        include: { export: true },
+      });
+      await createStockMovement(tx, {
+        variant: { connect: { id: exportItem.variantId } },
+        productionDay: { connect: { id: exportItem.export.productionDayId } },
+        type: StockMovementType.EXPORT_ITEM,
+        typeRef: exportItem.id,
+        quantityChanged: -exportItem.quantity,
+      });
+      return exportItem;
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
@@ -120,11 +141,20 @@ export const updateExportItem = async (
   body: updateExportItemBodyDTO,
 ): Promise<ExportItem> => {
   try {
-    const exportItem = await prisma.exportItem.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const exportItem = await prisma.exportItem.update({
+        where: { id: params.id },
+        data: body,
+      });
+      if (body.quantity !== undefined)
+        await updateStockMovement(
+          tx,
+          StockMovementType.EXPORT_ITEM,
+          exportItem.id,
+          -exportItem.quantity,
+        );
+      return exportItem;
     });
-    return exportItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -139,10 +169,17 @@ export const deleteExportItem = async (
   params: deleteExportItemParamsDTO,
 ): Promise<ExportItem> => {
   try {
-    const exportItem = await prisma.exportItem.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const exportItem = await prisma.exportItem.delete({
+        where: { id: params.id },
+      });
+      await deleteStockMovement(
+        tx,
+        StockMovementType.EXPORT_ITEM,
+        exportItem.id,
+      );
+      return exportItem;
     });
-    return exportItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")

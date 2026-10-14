@@ -1,4 +1,8 @@
-import { CustomerReturnItem, Prisma } from "../../db/generated/prisma/client";
+import {
+  CustomerReturnItem,
+  Prisma,
+  StockMovementType,
+} from "../../db/generated/prisma/client";
 import {
   CustomerReturnItemFindManyArgs,
   CustomerReturnItemWhereInput,
@@ -9,7 +13,12 @@ import {
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
-import { buildQuery } from "../../utils/utils";
+import {
+  buildQuery,
+  createStockMovement,
+  deleteStockMovement,
+  updateStockMovement,
+} from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
   createCustomerReturnItemBodyDTO,
@@ -95,10 +104,23 @@ export const createCustomerReturnItem = async (
   body: createCustomerReturnItemBodyDTO,
 ): Promise<CustomerReturnItem> => {
   try {
-    const customerReturnItem = await prisma.customerReturnItem.create({
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const customerReturnItem = await tx.customerReturnItem.create({
+        data: body,
+        include: { customerReturn: true, exportItem: true },
+      });
+      await createStockMovement(tx, {
+        variant: { connect: { id: customerReturnItem.exportItem.variantId } },
+        productionDay: {
+          connect: { id: customerReturnItem.customerReturn.productionDayId },
+        },
+        occurredAt: customerReturnItem.customerReturn.occurredAt,
+        quantityChanged: body.quantity,
+        type: StockMovementType.CUSTOMER_RETURN_ITEM,
+        typeRef: customerReturnItem.id,
+      });
+      return customerReturnItem;
     });
-    return customerReturnItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
@@ -114,11 +136,20 @@ export const updateCustomerReturnItem = async (
   body: updateCustomerReturnItemBodyDTO,
 ): Promise<CustomerReturnItem> => {
   try {
-    const customerReturnItem = await prisma.customerReturnItem.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const customerReturnItem = await prisma.customerReturnItem.update({
+        where: { id: params.id },
+        data: body,
+      });
+      if (body.quantity !== undefined)
+        await updateStockMovement(
+          tx,
+          StockMovementType.CUSTOMER_RETURN_ITEM,
+          customerReturnItem.id,
+          body.quantity,
+        );
+      return customerReturnItem;
     });
-    return customerReturnItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -135,10 +166,17 @@ export const deleteCustomerReturnItem = async (
   params: deleteCustomerReturnItemParamsDTO,
 ): Promise<CustomerReturnItem> => {
   try {
-    const customerReturnItem = await prisma.customerReturnItem.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const customerReturnItem = await prisma.customerReturnItem.delete({
+        where: { id: params.id },
+      });
+      await deleteStockMovement(
+        tx,
+        StockMovementType.CUSTOMER_RETURN_ITEM,
+        customerReturnItem.id,
+      );
+      return customerReturnItem;
     });
-    return customerReturnItem;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
