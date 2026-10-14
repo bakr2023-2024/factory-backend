@@ -1,7 +1,4 @@
-import {
-  Prisma,
-  StockMovementType,
-} from "../db/generated/prisma/client";
+import { Prisma, StockMovementType } from "../db/generated/prisma/client";
 import { paginateConsumptionsDTO } from "../modules/consumption/consumption.validation";
 import { paginateCustomersDTO } from "../modules/customer/customer.validation";
 import { paginateCustomerReturnsDTO } from "../modules/customerReturn/customerReturn.validation";
@@ -21,9 +18,13 @@ import { paginateSupplierReturnsDTO } from "../modules/supplierReturn/supplierRe
 import { paginateSupplierReturnItemsDTO } from "../modules/supplierReturnItem/supplierReturnItem.validation";
 import { paginateVariantsDTO } from "../modules/variant/variant.validation";
 import { paginateWeeksDTO } from "../modules/week/week.validation";
-import {
-  StockMovementCreateInput,
-} from "../db/generated/prisma/models";
+import { StockMovementCreateInput } from "../db/generated/prisma/models";
+import { paginateAttendancesDTO } from "../modules/attendance/attendance.validation";
+import { paginateLaborersDTO } from "../modules/laborer/laborer.validation";
+import { paginateLoansDTO } from "../modules/loan/loan.validation";
+import { paginateLoanPaymentsDTO } from "../modules/loanPayment/loanPayment.validation";
+import { paginatePaymentsDTO } from "../modules/payment/payment.validation";
+import { paginateRatesDTO } from "../modules/rate/rate.validation";
 
 type Query =
   | Prisma.ItemFindManyArgs
@@ -44,7 +45,13 @@ type Query =
   | Prisma.CustomerReturnItemFindManyArgs
   | Prisma.SupplierReturnFindManyArgs
   | Prisma.SupplierReturnItemFindManyArgs
-  | Prisma.StockMovementFindManyArgs;
+  | Prisma.StockMovementFindManyArgs
+  | Prisma.LaborerFindManyArgs
+  | Prisma.RateFindManyArgs
+  | Prisma.AttendanceFindManyArgs
+  | Prisma.LoanFindManyArgs
+  | Prisma.LoanPaymentFindManyArgs
+  | Prisma.PaymentFindManyArgs;
 
 type Where =
   | Prisma.ItemWhereInput
@@ -65,7 +72,13 @@ type Where =
   | Prisma.CustomerReturnItemWhereInput
   | Prisma.SupplierReturnWhereInput
   | Prisma.SupplierReturnItemWhereInput
-  | Prisma.StockMovementWhereInput;
+  | Prisma.StockMovementWhereInput
+  | Prisma.LaborerWhereInput
+  | Prisma.RateWhereInput
+  | Prisma.AttendanceWhereInput
+  | Prisma.LoanWhereInput
+  | Prisma.LoanPaymentWhereInput
+  | Prisma.PaymentWhereInput;
 
 type OrderBy =
   | Prisma.ItemOrderByWithRelationInput
@@ -86,7 +99,13 @@ type OrderBy =
   | Prisma.CustomerReturnItemOrderByWithRelationInput
   | Prisma.SupplierReturnOrderByWithRelationInput
   | Prisma.SupplierReturnItemOrderByWithRelationInput
-  | Prisma.StockMovementOrderByWithRelationInput;
+  | Prisma.StockMovementOrderByWithRelationInput
+  | Prisma.LaborerOrderByWithRelationInput
+  | Prisma.RateOrderByWithRelationInput
+  | Prisma.AttendanceOrderByWithRelationInput
+  | Prisma.LoanOrderByWithRelationInput
+  | Prisma.LoanPaymentOrderByWithRelationInput
+  | Prisma.PaymentOrderByWithRelationInput;
 
 type Pagination =
   | paginateItemsDTO
@@ -107,7 +126,13 @@ type Pagination =
   | paginateCustomerReturnItemsDTO
   | paginateSupplierReturnsDTO
   | paginateSupplierReturnItemsDTO
-  | paginateStockMovementsDTO;
+  | paginateStockMovementsDTO
+  | paginateLaborersDTO
+  | paginateRatesDTO
+  | paginateAttendancesDTO
+  | paginateLoansDTO
+  | paginateLoanPaymentsDTO
+  | paginatePaymentsDTO;
 
 export const buildQuery = (
   pagination: Pagination,
