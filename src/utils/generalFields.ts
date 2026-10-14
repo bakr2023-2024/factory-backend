@@ -1,15 +1,19 @@
 import z from "zod";
 import { Prisma } from "../db/generated/prisma/client";
-const strToNum = (message: string) => {
+const strToNum = (message: string, isInt = false) => {
   return z
     .string()
-    .refine((val) => val.trim() && !isNaN(Number(val)) && Number(val) > 0, {
-      message,
-    })
+    .refine(
+      (val) => {
+        const n = Number(val.trim());
+        return n && !isNaN(n) && n >= 0 && (!isInt || Number.isInteger(n));
+      },
+      { message },
+    )
     .transform((val) => Number(val));
 };
 export const fields = {
-  idParam: strToNum("ID can only be a positive integer"),
+  idParam: strToNum("ID can only be a positive integer", true),
   idBody: z
     .number()
     .int()
@@ -32,7 +36,12 @@ export const fields = {
     .number()
     .int()
     .min(1, { message: "quantity can only be a positive integer" }),
-  quantityParam: strToNum("quantity can only be a positive integer"),
+  quantityParam: strToNum("quantity can only be a positive integer", true),
+  factor: z
+    .number()
+    .int()
+    .min(0, { message: "factor can only be a positive number" }),
+  factorParam: strToNum("factor can only be a positive number"),
   unitPriceBody: z
     .number()
     .min(0.01, { message: "unitPrice can only be a positive number" }),
