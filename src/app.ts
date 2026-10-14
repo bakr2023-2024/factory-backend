@@ -23,6 +23,8 @@ import customerReturnRouter from "./modules/customerReturn/customerReturn.route"
 import customerReturnItemRouter from "./modules/customerReturnItem/customerReturnItem.route";
 import supplierReturnRouter from "./modules/supplierReturn/supplierReturn.route";
 import supplierReturnItemRouter from "./modules/supplierReturnItem/supplierReturnItem.route";
+import stockMovementRouter from "./modules/stockMovement/stockMovement.route";
+import reportRouter from "./modules/report/report.route";
 import { ErrorDetail } from "./utils/types/types";
 import { authentication } from "./middleware/auth.middleware";
 const app = express();
@@ -46,6 +48,8 @@ app.use("/customerReturns", authentication, customerReturnRouter);
 app.use("/customerReturnItems", authentication, customerReturnItemRouter);
 app.use("/supplierReturns", authentication, supplierReturnRouter);
 app.use("/supplierReturnItems", authentication, supplierReturnItemRouter);
+app.use("/stockMovements", authentication, stockMovementRouter);
+app.use("/reports", authentication, reportRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
