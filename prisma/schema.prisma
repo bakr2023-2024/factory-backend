@@ -53,12 +53,13 @@ model Item {
 // --------------------------------------------------
 
 model Variant {
-  id         Int      @id @default(autoincrement())
-  itemId     Int
-  unitWeight Decimal  @default(1) @db.Decimal(6, 3)
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  itemId       Int
+  currentStock Int      @default(0)
+  unitWeight   Decimal  @default(1) @db.Decimal(6, 3)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   item              Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
   stockMovements    StockMovement[]
@@ -75,24 +76,30 @@ model Variant {
 // --------------------------------------------------
 
 enum StockMovementType {
-  IMPORT
-  EXPORT
-  PRODUCTION
+  IMPORT_ITEM
+  EXPORT_ITEM
+  PRODUCTION_BATCH
   CONSUMPTION
+  CUSTOMER_RETURN_ITEM
+  SUPPLIER_RETURN_ITEM
 }
 
 model StockMovement {
   id              Int               @id @default(autoincrement())
+  productionDayId Int
   variantId       Int
   quantityChanged Int
   occurredAt      DateTime          @default(now())
   type            StockMovementType
-  typeRef         Int?
+  typeRef         Int
   notes           String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
-  variant Variant @relation(fields: [variantId], references: [id])
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id])
+  variant       Variant       @relation(fields: [variantId], references: [id])
+
+  @@unique([type, typeRef])
 }
 
 // --------------------------------------------------
@@ -112,14 +119,16 @@ model Supplier {
 }
 
 model SupplierReturn {
-  id         Int      @id @default(autoincrement())
-  supplierId Int
-  notes      String?
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  supplierId      Int
+  productionDayId Int
+  notes           String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   supplier            Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  productionDay       ProductionDay        @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
   supplierReturnItems SupplierReturnItem[]
 }
 
@@ -144,15 +153,17 @@ model SupplierReturnItem {
 // --------------------------------------------------
 
 model Import {
-  id         Int      @id @default(autoincrement())
-  supplierId Int
-  notes      String?
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  supplierId      Int
+  productionDayId Int
+  notes           String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  supplier    Supplier     @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  importItems ImportItem[]
+  supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
+  importItems   ImportItem[]
 }
 
 model ImportItem {
@@ -190,14 +201,16 @@ model Customer {
 }
 
 model CustomerReturn {
-  id         Int      @id @default(autoincrement())
-  customerId Int
-  notes      String?
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  customerId      Int
+  productionDayId Int
+  notes           String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   customer            Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  productionDay       ProductionDay        @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
   customerReturnItems CustomerReturnItem[]
 }
 
@@ -222,15 +235,17 @@ model CustomerReturnItem {
 // --------------------------------------------------
 
 model Export {
-  id         Int      @id @default(autoincrement())
-  customerId Int
-  notes      String?
-  occurredAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  customerId      Int
+  productionDayId Int
+  notes           String?
+  occurredAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
-  exportItems ExportItem[]
+  customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
+  exportItems   ExportItem[]
 }
 
 model ExportItem {
@@ -254,15 +269,20 @@ model ExportItem {
 // --------------------------------------------------
 // Seasons
 // --------------------------------------------------
+enum SeasonKind {
+  NORMAL
+  SPECIAL
+}
 
 model Season {
-  id        Int       @id @default(autoincrement())
-  startDate DateTime  @default(now()) @db.Date
-  endDate   DateTime? @db.Date
+  id        Int         @id @default(autoincrement())
+  startDate DateTime    @default(now()) @db.Date
+  endDate   DateTime?   @db.Date
   name      String?
+  kind      SeasonKind? @default(NORMAL)
   notes     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   weeks Week[]
 }
@@ -300,7 +320,12 @@ model ProductionDay {
 
   week              Week              @relation(fields: [weekId], references: [id], onDelete: Restrict)
   productionEntries ProductionEntry[]
+  imports           Import[]
+  exports           Export[]
   consumptions      Consumption[]
+  stockMovements    StockMovement[]
+  customerReturns   CustomerReturn[]
+  supplierReturns   SupplierReturn[]
 
   @@unique([productionDate, weekId])
 }
