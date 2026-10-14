@@ -31,7 +31,9 @@ export const getSupplierReturns = async (
   // inject fields into query
   const supplier: Prisma.SupplierWhereInput = {};
   if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
+        where.productionDayId = pagination.productionDayId;
+  if (pagination.productionDate)
+      where.productionDay = { productionDate: pagination.productionDate };
   if (pagination.supplierName)
     supplier.name = { contains: pagination.supplierName, mode: "insensitive" };
   if (pagination.supplierNumber) {
@@ -83,7 +85,9 @@ export const createSupplierReturn = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No supplier exists with that ID");
+        throw new ConflictException(
+          "No supplier/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -103,7 +107,9 @@ export const updateSupplierReturn = async (
       if (err.code === "P2025")
         throw new NotFoundException("SupplierReturn not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No supplier exists with that ID");
+        throw new ConflictException(
+          "No supplier/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }

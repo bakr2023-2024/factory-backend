@@ -30,10 +30,12 @@ export const getCustomerReturns = async (
 
   // inject fields into query
   const customer: Prisma.CustomerWhereInput = {};
+    if (pagination.productionDayId)
+      where.productionDayId = pagination.productionDayId;
+    if (pagination.productionDate)
+      where.productionDay = { productionDate: pagination.productionDate };
   if (pagination.customerName)
     customer.name = { contains: pagination.customerName, mode: "insensitive" };
-  if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
   if (pagination.customerNumber)
     customer.number = {
       contains: pagination.customerNumber,
@@ -81,7 +83,9 @@ export const createCustomerReturn = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No customer exists with that ID");
+        throw new ConflictException(
+          "No customer/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -101,7 +105,9 @@ export const updateCustomerReturn = async (
       if (err.code === "P2025")
         throw new NotFoundException("CustomerReturn not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No customer exists with that ID");
+        throw new ConflictException(
+          "No customer/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }

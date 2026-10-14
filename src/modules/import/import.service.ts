@@ -32,6 +32,8 @@ export const getImports = async (
   const occurredAt: Prisma.DateTimeFilter = {};
   if (pagination.productionDayId)
     where.productionDayId = pagination.productionDayId;
+  if (pagination.productionDate)
+    where.productionDay = { productionDate: pagination.productionDate };
   if (pagination.supplierId) where.supplierId = pagination.supplierId;
   if (pagination.supplierName)
     supplier.name = {
@@ -81,7 +83,7 @@ export const createImport = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No supplier exists with this ID");
+        throw new ConflictException("No supplier/productionDay exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -100,7 +102,7 @@ export const updateImport = async (
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025") throw new NotFoundException("Import not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No supplier exists with that ID");
+        throw new ConflictException("No supplier/productionDay exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }

@@ -30,7 +30,10 @@ export const getExports = async (
 
   const customer: Prisma.CustomerWhereInput = {};
   const occurredAt: Prisma.DateTimeFilter = {};
-  if(pagination.productionDayId)where.productionDayId=pagination.productionDayId
+  if (pagination.productionDayId)
+    where.productionDayId = pagination.productionDayId;
+  if (pagination.productionDate)
+    where.productionDay = { productionDate: pagination.productionDate };
   if (pagination.customerId) where.customerId = pagination.customerId;
   if (pagination.customerName)
     customer.name = {
@@ -80,7 +83,9 @@ export const createExport = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No customer exists with this ID");
+        throw new ConflictException(
+          "No customer/productionDay exists with this ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -99,7 +104,9 @@ export const updateExport = async (
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025") throw new NotFoundException("Export not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No customer exists with that ID");
+        throw new ConflictException(
+          "No customer/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }

@@ -79,6 +79,52 @@ describe("GET /exports", () => {
       }),
     );
   });
+  it("should return all exports given productionDayId", async () => {
+    const productionDayId = seed.productionDays[0].id;
+    const res: PaginatedExportsResponse = await auth().get(
+      `/exports?productionDayId=${productionDayId}`,
+    );
+    const filtered = seed.exports.filter(
+      (c) => c.productionDayId === productionDayId,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all exports given productionDate", async () => {
+    const productionDate = seed.productionDays[0].productionDate
+      .toISOString()
+      .slice(0, 10);
+    const res: PaginatedExportsResponse = await auth().get(
+      `/exports?productionDate=${productionDate}`,
+    );
+    const dayIds = seed.productionDays
+      .filter(
+        (d) => d.productionDate.toISOString().slice(0, 10) === productionDate,
+      )
+      .map((d) => d.id);
+    const filtered = seed.exports.filter((c) =>
+      dayIds.includes(c.productionDayId),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
 
   it("should return all exports that occurred between occurredFrom and occurredTo", async () => {
     const start = new Date(seed.exports[0].occurredAt.getTime() + 3600000);
@@ -157,22 +203,28 @@ describe("GET /exports/:id", () => {
 describe("POST /exports", () => {
   it("should create export successfully given customerId", async () => {
     const customerId = seed.customers[0].id;
+    const productionDayId = seed.productionDays[0].id;
     const res: ExportResponse = await auth()
       .post("/exports")
-      .send({ customerId });
+      .send({ customerId, productionDayId });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ data: { customerId } });
+    expect(res.body).toMatchObject({ data: { customerId, productionDayId } });
   });
 
-  it("should fail given invalid customerId", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/exports")
-      .send({ customerId: -1 });
+      .send({ customerId: -1, productionDayId: -1 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
     expect(res.body.cause).toEqual([
+      {
+        key: "body",
+        message: "ID can only be a positive integer",
+        path: ["productionDayId"],
+      },
       {
         key: "body",
         message: "ID can only be a positive integer",
@@ -182,12 +234,26 @@ describe("POST /exports", () => {
   });
 
   it("should fail given non-existent customerId", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/exports")
-      .send({ customerId: 99999999 });
+    const res: ErrorResponse = await auth().post("/exports").send({
+      customerId: 99999999,
+      productionDayId: seed.productionDays[0].id,
+    });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No customer exists with this ID");
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with this ID",
+    );
+  });
+  it("should fail given non-existent productionDayId", async () => {
+    const res: ErrorResponse = await auth().post("/exports").send({
+      productionDayId: 99999999,
+      customerId: seed.customers[0].id,
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with this ID",
+    );
   });
 });
 
@@ -255,7 +321,19 @@ describe("PATCH /exports/:id", () => {
       .send({ customerId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No customer exists with that ID");
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
+  });
+  it("should fail given non-existent productionDayId", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/exports/${seed.exports[0].id}`)
+      .send({ productionDayId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
   });
 });
 

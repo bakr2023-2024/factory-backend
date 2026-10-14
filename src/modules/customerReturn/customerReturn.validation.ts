@@ -4,6 +4,7 @@ import { fields } from "../../utils/generalFields";
 export const paginateCustomerReturns = {
   query: fields.paginate("CustomerReturn").extend({
     productionDayId: fields.idParam.optional(),
+    productionDate: fields.date.optional(),
     customerName: fields.name.optional(),
     customerNumber: fields.number.optional(),
     customerId: fields.idParam.optional(),
@@ -19,7 +20,7 @@ export const getCustomerReturn = {
 export const createCustomerReturn = {
   body: z.strictObject({
     customerId: fields.idBody,
-    productionDayId: fields.idParam,
+    productionDayId: fields.idBody,
     occurredAt: fields.dateTime,
     notes: z.string().optional(),
   }),
@@ -30,7 +31,7 @@ export const updateCustomerReturn = {
   }),
   body: z.strictObject({
     customerId: fields.idBody.optional(),
-    productionDayId: fields.idParam.optional(),
+    productionDayId: fields.idBody.optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),

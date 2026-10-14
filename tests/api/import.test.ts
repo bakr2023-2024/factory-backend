@@ -79,6 +79,52 @@ describe("GET /imports", () => {
       }),
     );
   });
+  it("should return all imports given productionDayId", async () => {
+    const productionDayId = seed.productionDays[0].id;
+    const res: PaginatedImportsResponse = await auth().get(
+      `/imports?productionDayId=${productionDayId}`,
+    );
+    const filtered = seed.imports.filter(
+      (c) => c.productionDayId === productionDayId,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all imports given productionDate", async () => {
+    const productionDate = seed.productionDays[0].productionDate
+      .toISOString()
+      .slice(0, 10);
+    const res: PaginatedImportsResponse = await auth().get(
+      `/imports?productionDate=${productionDate}`,
+    );
+    const dayIds = seed.productionDays
+      .filter(
+        (d) => d.productionDate.toISOString().slice(0, 10) === productionDate,
+      )
+      .map((d) => d.id);
+    const filtered = seed.imports.filter((c) =>
+      dayIds.includes(c.productionDayId),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
 
   it("should return all imports that occurred between occurredFrom and occurredTo", async () => {
     const start = new Date(seed.imports[0].occurredAt.getTime() + 3600000);
@@ -157,22 +203,28 @@ describe("GET /imports/:id", () => {
 describe("POST /imports", () => {
   it("should create import successfully given supplierId", async () => {
     const supplierId = seed.suppliers[0].id;
+    const productionDayId = seed.productionDays[0].id;
     const res: ImportResponse = await auth()
       .post("/imports")
-      .send({ supplierId });
+      .send({ supplierId, productionDayId });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ data: { supplierId } });
+    expect(res.body).toMatchObject({ data: { supplierId, productionDayId } });
   });
 
-  it("should fail given invalid supplierId", async () => {
+  it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/imports")
-      .send({ supplierId: -1 });
+      .send({ supplierId: -1, productionDayId: -1 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
     expect(res.body.cause).toEqual([
+      {
+        key: "body",
+        message: "ID can only be a positive integer",
+        path: ["productionDayId"],
+      },
       {
         key: "body",
         message: "ID can only be a positive integer",
@@ -182,12 +234,27 @@ describe("POST /imports", () => {
   });
 
   it("should fail given non-existent supplierId", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/imports")
-      .send({ supplierId: 99999999 });
+    const res: ErrorResponse = await auth().post("/imports").send({
+      supplierId: 99999999,
+      productionDayId: seed.productionDays[0].id,
+    });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No supplier exists with this ID");
+    expect(res.body.message).toBe(
+      "No supplier/productionDay exists with that ID",
+    );
+  });
+  it("should fail if productionDay isn't found", async () => {
+    const res: ErrorResponse = await auth().post("/imports").send({
+      productionDayId: 99999999,
+      supplierId: seed.suppliers[2].id,
+      occurredAt: "2026-10-10T09:00:00.000Z",
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No supplier/productionDay exists with that ID",
+    );
   });
 });
 
@@ -255,7 +322,19 @@ describe("PATCH /imports/:id", () => {
       .send({ supplierId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No supplier exists with that ID");
+    expect(res.body.message).toBe(
+      "No supplier/productionDay exists with that ID",
+    );
+  });
+  it("should fail given non-existent productionDay", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/imports/${seed.imports[0].id}`)
+      .send({ productionDayId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No supplier/productionDay exists with that ID",
+    );
   });
 });
 

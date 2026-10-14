@@ -131,7 +131,52 @@ describe("GET /customerReturns", () => {
       }),
     );
   });
+  it("should return all customer returns given productionDayId", async () => {
+    const productionDayId = seed.productionDays[0].id;
+    const res: PaginatedCustomerReturnsResponse = await auth().get(
+      `/customerReturns?productionDayId=${productionDayId}`,
+    );
+    const filtered = seed.customerReturns.filter(
+      (c) => c.productionDayId === productionDayId,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all customer returns given productionDate", async () => {
+    const productionDate = seed.productionDays[0].productionDate
+      .toISOString()
+      .slice(0, 10);
+    const res: PaginatedCustomerReturnsResponse = await auth().get(
+      `/customerReturns?productionDate=${productionDate}`,
+    );
+    const dayIds = seed.productionDays
+      .filter(
+        (d) => d.productionDate.toISOString().slice(0, 10) === productionDate,
+      )
+      .map((d) => d.id);
+    const filtered = seed.customerReturns.filter((c) =>
+      dayIds.includes(c.productionDayId),
+    );
 
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all customer returns given occurredFrom", async () => {
     const occurredFrom = new Date(
       seed.customerReturns[0].occurredAt.getTime() + 3600000,
@@ -262,6 +307,7 @@ describe("POST /customerReturns", () => {
   it("should create customer return successfully given valid data", async () => {
     const payload = {
       customerId: seed.customers[0].id,
+      productionDayId: seed.productionDays[2].id,
       occurredAt: "2026-10-10T09:00:00.000Z",
       notes: "New return",
     };
@@ -276,7 +322,7 @@ describe("POST /customerReturns", () => {
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/customerReturns")
-      .send({ customerId: -1, occurredAt: "badDate" });
+      .send({ customerId: -1, productionDayId: -1, occurredAt: "badDate" });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -288,6 +334,11 @@ describe("POST /customerReturns", () => {
       },
       {
         key: "body",
+        message: "ID can only be a positive integer",
+        path: ["productionDayId"],
+      },
+      {
+        key: "body",
         message: "Invalid DateTime",
         path: ["occurredAt"],
       },
@@ -295,12 +346,28 @@ describe("POST /customerReturns", () => {
   });
 
   it("should fail if customer isn't found", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/customerReturns")
-      .send({ customerId: 99999999, occurredAt: "2026-10-10T09:00:00.000Z" });
+    const res: ErrorResponse = await auth().post("/customerReturns").send({
+      customerId: 99999999,
+      productionDayId: seed.productionDays[2].id,
+      occurredAt: "2026-10-10T09:00:00.000Z",
+    });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No customer exists with that ID");
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
+  });
+  it("should fail if productionDay isn't found", async () => {
+    const res: ErrorResponse = await auth().post("/customerReturns").send({
+      productionDayId: 99999999,
+      customerId: seed.customers[2].id,
+      occurredAt: "2026-10-10T09:00:00.000Z",
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
   });
 });
 
@@ -367,12 +434,23 @@ describe("PATCH /customerReturns/:id", () => {
       .send({ customerId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No customer exists with that ID");
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
+  });
+  it("should fail if productionDay isn't found", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/customerReturns/${seed.customerReturns[0].id}`)
+      .send({ productionDayId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "No customer/productionDay exists with that ID",
+    );
   });
 });
 
 describe("DELETE /customerReturns/:id", () => {
-  // every seeded customer return has an item, so delete one with no children
   let createdCustomerReturn: CustomerReturn;
 
   beforeAll(async () => {

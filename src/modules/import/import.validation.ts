@@ -4,6 +4,7 @@ import { fields } from "../../utils/generalFields";
 export const paginateImports = {
   query: fields.paginate("Import").extend({
     productionDayId: fields.idParam.optional(),
+    productionDate: fields.date.optional(),
     supplierId: fields.idParam.optional(),
     supplierName: fields.name.optional(),
     supplierNumber: fields.number.optional(),
