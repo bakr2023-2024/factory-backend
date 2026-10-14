@@ -1,5 +1,6 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { SeasonKind } from "../../db/generated/prisma/enums";
 
 export const paginateSeasons = {
   query: fields.paginate("Season").extend({
@@ -8,6 +9,7 @@ export const paginateSeasons = {
     startedTo: fields.date.optional(),
     endedFrom: fields.date.optional(),
     endedTo: fields.date.optional(),
+    kind: z.enum(Object.values(SeasonKind)).optional(),
   }),
 };
 export const getSeason = {

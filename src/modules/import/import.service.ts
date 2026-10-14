@@ -30,6 +30,8 @@ export const getImports = async (
 
   const supplier: Prisma.SupplierWhereInput = {};
   const occurredAt: Prisma.DateTimeFilter = {};
+  if (pagination.productionDayId)
+    where.productionDayId = pagination.productionDayId;
   if (pagination.supplierId) where.supplierId = pagination.supplierId;
   if (pagination.supplierName)
     supplier.name = {

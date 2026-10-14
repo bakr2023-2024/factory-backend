@@ -30,6 +30,8 @@ export const getSupplierReturns = async (
 
   // inject fields into query
   const supplier: Prisma.SupplierWhereInput = {};
+  if (pagination.productionDayId)
+    where.productionDayId = pagination.productionDayId;
   if (pagination.supplierName)
     supplier.name = { contains: pagination.supplierName, mode: "insensitive" };
   if (pagination.supplierNumber) {

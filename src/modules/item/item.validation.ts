@@ -5,6 +5,7 @@ import { ItemType } from "../../db/generated/prisma/enums";
 export const paginateItems = {
   query: fields.paginate("Item").extend({
     name: fields.name.optional(),
+    type: z.enum(Object.values(ItemType)).optional(),
   }),
 };
 export const getItem = {

@@ -3,6 +3,7 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateSupplierReturns = {
   query: fields.paginate("SupplierReturn").extend({
+    productionDayId: fields.idParam.optional(),
     supplierName: fields.name.optional(),
     supplierNumber: fields.number.optional(),
     supplierId: fields.idParam.optional(),
@@ -18,6 +19,7 @@ export const getSupplierReturn = {
 export const createSupplierReturn = {
   body: z.strictObject({
     supplierId: fields.idBody,
+    productionDayId: fields.idParam,
     occurredAt: fields.dateTime,
     notes: z.string().optional(),
   }),
@@ -28,6 +30,7 @@ export const updateSupplierReturn = {
   }),
   body: z.strictObject({
     supplierId: fields.idBody.optional(),
+    productionDayId: fields.idParam.optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),

@@ -70,7 +70,7 @@ export const createWeek = async (body: createWeekBodyDTO): Promise<Week> => {
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No season exists with this ID");
+        throw new ConflictException("No season exists with that ID");
     }
     throw new InternalServerException((err as Error).message);
   }

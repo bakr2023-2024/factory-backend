@@ -3,6 +3,7 @@ import { fields } from "../../utils/generalFields";
 
 export const paginateExports = {
   query: fields.paginate("Export").extend({
+    productionDayId: fields.idParam.optional(),
     customerId: fields.idParam.optional(),
     customerName: fields.name.optional(),
     customerNumber: fields.number.optional(),
@@ -17,6 +18,7 @@ export const getExport = {
 };
 export const createExport = {
   body: z.strictObject({
+    productionDayId: fields.idBody,
     customerId: fields.idBody,
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
@@ -27,6 +29,7 @@ export const updateExport = {
     id: fields.idParam,
   }),
   body: z.strictObject({
+    productionDayId: fields.idBody.optional(),
     customerId: fields.idBody.optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),

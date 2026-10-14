@@ -30,6 +30,7 @@ export const getExports = async (
 
   const customer: Prisma.CustomerWhereInput = {};
   const occurredAt: Prisma.DateTimeFilter = {};
+  if(pagination.productionDayId)where.productionDayId=pagination.productionDayId
   if (pagination.customerId) where.customerId = pagination.customerId;
   if (pagination.customerName)
     customer.name = {

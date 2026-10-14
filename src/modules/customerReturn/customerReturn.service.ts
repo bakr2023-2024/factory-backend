@@ -32,6 +32,8 @@ export const getCustomerReturns = async (
   const customer: Prisma.CustomerWhereInput = {};
   if (pagination.customerName)
     customer.name = { contains: pagination.customerName, mode: "insensitive" };
+  if (pagination.productionDayId)
+    where.productionDayId = pagination.productionDayId;
   if (pagination.customerNumber)
     customer.number = {
       contains: pagination.customerNumber,
