@@ -2,64 +2,44 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { Export, Customer } from "../src/db/generated/prisma/client";
+import { Export } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import prisma from "../src/db/prisma";
-import { json, login,auth } from "./helpers/auth";
+} from "../../src/utils/types/response.types";
+import prisma from "../../src/db/prisma";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
 
 type ExportResponse = DataResponse<Export>;
 type PaginatedExportsResponse = PaginationResponse<Export[]>;
 
-const mockCustomers = [
-  { name: "john cena", number: "07775000" },
-  { name: "cm punk", number: "08886000" },
-  { name: "brock lesner", number: "09997000" },
-];
-let mockExports: { customerId: number; occurredAt: Date }[] = [];
-let createdCustomers: Customer[];
+let seed: MockData;
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-  createdCustomers = await prisma.customer.createManyAndReturn({
-    data: mockCustomers,
-  });
-  mockExports.push({
-    customerId: createdCustomers[0].id,
-    occurredAt: new Date("2026-09-12T10:00:00Z"),
-  });
-  mockExports.push({
-    customerId: createdCustomers[0].id,
-    occurredAt: new Date("2026-09-16T15:00:00Z"),
-  });
-  mockExports.push({
-    customerId: createdCustomers[1].id,
-    occurredAt: new Date("2026-09-14T20:00:00Z"),
-  });
 });
+
 describe("GET /exports", () => {
-  let createdExports: Export[] = [];
-
-  beforeAll(async () => {
-    await prisma.export.deleteMany({});
-    createdExports = await prisma.export.createManyAndReturn({
-      data: mockExports,
-    });
-  });
-
   it("should return all exports", async () => {
     const res: PaginatedExportsResponse = await auth().get("/exports");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdExports,
+        data: seed.exports,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdExports.length,
+        totalPages: Math.ceil(seed.exports.length / 20),
+        totalCount: seed.exports.length,
       }),
     );
   });
@@ -72,88 +52,84 @@ describe("GET /exports", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdExports[2]],
+        data: seed.exports.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        totalPages: Math.ceil(seed.exports.length / 2),
+        totalCount: seed.exports.length,
       }),
     );
   });
 
   it("should return all exports that relate to customerId", async () => {
+    const customerId = seed.customers[0].id;
     const res: PaginatedExportsResponse = await auth().get(
-      `/exports?customerId=${createdCustomers[0].id}`,
+      `/exports?customerId=${customerId}`,
     );
-    const filtered = createdExports.filter(
-      (exporte) => exporte.customerId === createdCustomers[0].id,
-    );
+    const filtered = seed.exports.filter((e) => e.customerId === customerId);
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
+
   it("should return all exports that occurred between occurredFrom and occurredTo", async () => {
-    const start = "2026-09-12T00:00:00Z";
-    const end = "2026-09-15T00:00:00Z";
+    const start = new Date(seed.exports[0].occurredAt.getTime() + 3600000);
+    const end = new Date(seed.exports[2].occurredAt.getTime() - 3600000);
     const res: PaginatedExportsResponse = await auth().get(
-      `/exports?occurredFrom=${start}&occurredTo=${end}`,
+      `/exports?occurredFrom=${encodeURIComponent(start.toISOString())}&occurredTo=${encodeURIComponent(end.toISOString())}`,
     );
-    const filtered = createdExports.filter(
-      ({ occurredAt }) =>
-        occurredAt.toISOString() >= start && occurredAt.toISOString() < end,
+    const filtered = seed.exports.filter(
+      (e) => e.occurredAt >= start && e.occurredAt <= end,
     );
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
-    it("should return all exports sorted according to sortBy and order", async () => {
-      const res: PaginatedExportsResponse = await auth().get(
-        "/exports?sortBy=occurredAt&order=desc",
-      );
-      const sorted = createdExports.toSorted(
-        (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
-      );
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual(
-        json({
-          data: sorted,
-          page: 1,
-          size: 20,
-          totalPages: 1,
-          totalCount: sorted.length,
-        }),
-      );
-    });
+
+  it("should return all exports sorted according to sortBy and order", async () => {
+    const res: PaginatedExportsResponse = await auth().get(
+      "/exports?sortBy=occurredAt&order=desc",
+    );
+    const sorted = seed.exports.toSorted(
+      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: sorted,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(sorted.length / 20),
+        totalCount: sorted.length,
+      }),
+    );
+  });
 });
 
 describe("GET /exports/:id", () => {
-  let createdExport: Export;
-
-  beforeAll(async () => {
-    await prisma.export.deleteMany({});
-    createdExport = await prisma.export.create({ data: mockExports[0] });
-  });
-
   it("should return export given valid id", async () => {
-    const id = createdExport.id;
-    const res: ExportResponse = await auth().get(`/exports/${id}`);
+    const exportRow = seed.exports[0];
+    const res: ExportResponse = await auth().get(`/exports/${exportRow.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdExport) });
+    expect(res.body).toEqual({ data: json(exportRow) });
   });
 
   it("should fail given invalid id", async () => {
@@ -179,19 +155,14 @@ describe("GET /exports/:id", () => {
 });
 
 describe("POST /exports", () => {
-  beforeAll(async () => {
-    await prisma.export.deleteMany({});
-  });
-
   it("should create export successfully given customerId", async () => {
+    const customerId = seed.customers[0].id;
     const res: ExportResponse = await auth()
       .post("/exports")
-      .send({ customerId: mockExports[0].customerId });
+      .send({ customerId });
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({
-      data: { customerId: mockExports[0].customerId },
-    });
+    expect(res.body).toMatchObject({ data: { customerId } });
   });
 
   it("should fail given invalid customerId", async () => {
@@ -209,35 +180,29 @@ describe("POST /exports", () => {
       },
     ]);
   });
+
   it("should fail given non-existent customerId", async () => {
     const res: ErrorResponse = await auth()
       .post("/exports")
       .send({ customerId: 99999999 });
+
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No customer exists with this ID");
   });
 });
 
 describe("PATCH /exports/:id", () => {
-  let createdExport: Export;
-  beforeAll(async () => {
-    await prisma.export.deleteMany({});
-    createdExport = await prisma.export.create({ data: mockExports[0] });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdExport.id;
+    const exportRow = seed.exports[0];
+    const customerId = seed.customers[1].id;
     const res: ExportResponse = await auth()
-      .patch(`/exports/${id}`)
-      .send({ customerId: mockExports[1].customerId });
+      .patch(`/exports/${exportRow.id}`)
+      .send({ customerId });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({
-          ...createdExport,
-          customerId: mockExports[1].customerId,
-        }),
+        ...json({ ...exportRow, customerId }),
         updatedAt: expect.any(String),
       },
     });
@@ -246,7 +211,7 @@ describe("PATCH /exports/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/exports/badId")
-      .send({ customerId: mockExports[2].customerId });
+      .send({ customerId: seed.customers[1].id });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -258,17 +223,19 @@ describe("PATCH /exports/:id", () => {
       },
     ]);
   });
+
   it("should fail if export isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/exports/99999999")
-      .send({ customerId: mockExports[0].customerId });
+      .send({ customerId: seed.customers[0].id });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Export not found");
   });
+
   it("should fail given invalid customerId", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/exports/${createdExport.id}`)
+      .patch(`/exports/${seed.exports[0].id}`)
       .send({ customerId: -1 });
 
     expect(res.status).toBe(400);
@@ -281,10 +248,10 @@ describe("PATCH /exports/:id", () => {
       },
     ]);
   });
+
   it("should fail given non-existent customer", async () => {
-    const id = createdExport.id;
     const res: ErrorResponse = await auth()
-      .patch(`/exports/${id}`)
+      .patch(`/exports/${seed.exports[0].id}`)
       .send({ customerId: 99999999 });
 
     expect(res.status).toBe(409);
@@ -293,11 +260,16 @@ describe("PATCH /exports/:id", () => {
 });
 
 describe("DELETE /exports/:id", () => {
+  // every seeded export has export items, so delete one with no children
   let createdExport: Export;
 
   beforeAll(async () => {
-    await prisma.export.deleteMany({});
-    createdExport = await prisma.export.create({ data: mockExports[0] });
+    createdExport = await prisma.export.create({
+      data: {
+        customerId: seed.customers[0].id,
+        productionDayId: seed.productionDays[0].id,
+      },
+    });
   });
 
   it("should delete successfully given valid id", async () => {
@@ -336,7 +308,6 @@ describe("DELETE /exports/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.export.deleteMany({});
-  await prisma.customer.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

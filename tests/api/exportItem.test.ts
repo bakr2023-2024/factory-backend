@@ -2,114 +2,44 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import {
-  Export,
-  ExportItem,
-  Item,
-  ItemType,
-  Customer,
-  Variant,
-} from "../src/db/generated/prisma/client";
+import { ExportItem } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, login, auth } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type ExportItemResponse = DataResponse<ExportItem>;
 type PaginatedExportItemsResponse = PaginationResponse<ExportItem[]>;
 
-const mockItems = [
-  { name: "Fruit Tofu", type: ItemType.PRODUCT },
-  { name: "Coffee Tofu", type: ItemType.PRODUCT },
-  { name: "Honey Barrel", type: ItemType.MATERIAL },
-];
-let createdItems: Item[];
-const mockVariants: { itemId: number; unitWeight: number }[] = [];
-let createdVariants: Variant[] = [];
-const mockCustomers = [
-  { name: "john cena", number: "07775000" },
-  { name: "cm punk", number: "08885000" },
-];
-let createdCustomers: Customer[];
-let mockExports: {
-  customerId: number;
-}[] = [];
-let createdExports: Export[] = [];
-const mockExportItems: {
-  exportId: number;
-  variantId: number;
-  quantity: number;
-  unitPrice?: number;
-}[] = [];
+let seed: MockData;
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-  createdItems = await prisma.item.createManyAndReturn({
-    data: mockItems,
-  });
-  mockVariants.push({ itemId: createdItems[0].id, unitWeight: 5 });
-  mockVariants.push({ itemId: createdItems[0].id, unitWeight: 7 });
-  mockVariants.push({ itemId: createdItems[1].id, unitWeight: 5 });
-  createdVariants = await prisma.variant.createManyAndReturn({
-    data: mockVariants,
-  });
-  createdCustomers = await prisma.customer.createManyAndReturn({
-    data: mockCustomers,
-  });
-  mockExports.push({
-    customerId: createdCustomers[0].id,
-  });
-  mockExports.push({
-    customerId: createdCustomers[0].id,
-  });
-  mockExports.push({
-    customerId: createdCustomers[1].id,
-  });
-  createdExports = await prisma.export.createManyAndReturn({
-    data: mockExports,
-  });
-  mockExportItems.push({
-    exportId: createdExports[0].id,
-    variantId: createdVariants[0].id,
-    quantity: 5,
-    unitPrice: 23.4,
-  });
-  mockExportItems.push({
-    exportId: createdExports[0].id,
-    variantId: createdVariants[1].id,
-    quantity: 3,
-    unitPrice: 25.2,
-  });
-  mockExportItems.push({
-    exportId: createdExports[1].id,
-    variantId: createdVariants[1].id,
-    quantity: 4,
-    unitPrice: 20.5,
-  });
 });
+
 describe("GET /exportItems", () => {
-  let createdExportItems: ExportItem[] = [];
-
-  beforeAll(async () => {
-    await prisma.exportItem.deleteMany({});
-    createdExportItems = await prisma.exportItem.createManyAndReturn({
-      data: mockExportItems,
-    });
-  });
-
   it("should return all exportItems", async () => {
     const res: PaginatedExportItemsResponse = await auth().get("/exportItems");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdExportItems,
+        data: seed.exportItems,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdExportItems.length,
+        totalPages: Math.ceil(seed.exportItems.length / 20),
+        totalCount: seed.exportItems.length,
       }),
     );
   });
@@ -122,54 +52,54 @@ describe("GET /exportItems", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdExportItems[2]],
+        data: seed.exportItems.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        totalPages: Math.ceil(seed.exportItems.length / 2),
+        totalCount: seed.exportItems.length,
       }),
     );
   });
 
   it("should return all exportItems that relate to queried customerName and max price", async () => {
-    const queriedName = createdCustomers[0].name;
+    const customer = seed.customers[0];
+    const maxPrice = 10;
     const res: PaginatedExportItemsResponse = await auth().get(
-      `/exportItems?customerName=${queriedName}&maxPrice=22`,
+      `/exportItems?customerName=${encodeURIComponent(customer.name)}&maxPrice=${maxPrice}`,
     );
-    const filtered = createdExportItems.filter((exportItem) => {
-      if (exportItem.unitPrice.comparedTo(22) == 1) return false;
-      const customerId = createdExports.find(
-        (i) => i.id == exportItem.exportId,
-      )?.customerId;
-      if (!customerId) return false;
-      return createdCustomers.find(
-        (s) => s.id === customerId && s.name.includes(queriedName),
-      );
+    const filtered = seed.exportItems.filter((exportItem) => {
+      if (exportItem.unitPrice.toNumber() > maxPrice) return false;
+      const exportRow = seed.exports.find((e) => e.id === exportItem.exportId);
+      return exportRow?.customerId === customer.id;
     });
+
+    expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
+
   it("should return all exportItems sorted according to sortBy and order", async () => {
     const res: PaginatedExportItemsResponse = await auth().get(
       "/exportItems?sortBy=unitPrice&order=desc",
     );
-    const sorted = createdExportItems.toSorted((a, b) =>
+    const sorted = seed.exportItems.toSorted((a, b) =>
       b.unitPrice.comparedTo(a.unitPrice),
     );
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: sorted,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(sorted.length / 20),
         totalCount: sorted.length,
       }),
     );
@@ -177,21 +107,14 @@ describe("GET /exportItems", () => {
 });
 
 describe("GET /exportItems/:id", () => {
-  let createdExportItem: ExportItem;
-
-  beforeAll(async () => {
-    await prisma.exportItem.deleteMany({});
-    createdExportItem = await prisma.exportItem.create({
-      data: mockExportItems[0],
-    });
-  });
-
   it("should return exportItem given valid id", async () => {
-    const id = createdExportItem.id;
-    const res: ExportItemResponse = await auth().get(`/exportItems/${id}`);
+    const exportItem = seed.exportItems[0];
+    const res: ExportItemResponse = await auth().get(
+      `/exportItems/${exportItem.id}`,
+    );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdExportItem) });
+    expect(res.body).toEqual({ data: json(exportItem) });
   });
 
   it("should fail given invalid id", async () => {
@@ -217,19 +140,20 @@ describe("GET /exportItems/:id", () => {
 });
 
 describe("POST /exportItems", () => {
-  beforeAll(async () => {
-    await prisma.exportItem.deleteMany({});
-  });
-
   it("should create exportItem successfully given variantId and exportId and quantity and unitPrice optionally", async () => {
-    const { variantId, exportId, quantity, unitPrice } = mockExportItems[0];
+    // (export 2, variant 3) is not used by any seeded export item
+    const payload = {
+      exportId: seed.exports[2].id,
+      variantId: seed.variants[3].id,
+      quantity: 7,
+      unitPrice: 5.5,
+    };
     const res: ExportItemResponse = await auth()
       .post("/exportItems")
-      .send({ variantId, exportId, quantity, unitPrice });
+      .send(payload);
+
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({
-      data: { variantId, exportId, quantity, unitPrice },
-    });
+    expect(res.body).toMatchObject({ data: payload });
   });
 
   it("should fail given invalid data", async () => {
@@ -262,17 +186,26 @@ describe("POST /exportItems", () => {
       },
     ]);
   });
+
   it("should fail if export isn't found", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/exportItems")
-      .send({ ...mockExportItems[1], exportId: 99999999 });
+    const res: ErrorResponse = await auth().post("/exportItems").send({
+      exportId: 99999999,
+      variantId: seed.variants[3].id,
+      quantity: 7,
+      unitPrice: 5.5,
+    });
+
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
   });
+
   it("should fail if variant isn't found", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/exportItems")
-      .send({ ...mockExportItems[1], variantId: 99999999 });
+    const res: ErrorResponse = await auth().post("/exportItems").send({
+      exportId: seed.exports[2].id,
+      variantId: 99999999,
+      quantity: 7,
+      unitPrice: 5.5,
+    });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
@@ -280,27 +213,16 @@ describe("POST /exportItems", () => {
 });
 
 describe("PATCH /exportItems/:id", () => {
-  let createdExportItem: ExportItem;
-  beforeAll(async () => {
-    await prisma.exportItem.deleteMany({});
-    createdExportItem = await prisma.exportItem.create({
-      data: mockExportItems[0],
-    });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdExportItem.id;
+    const exportItem = seed.exportItems[0];
     const res: ExportItemResponse = await auth()
-      .patch(`/exportItems/${id}`)
-      .send({ unitPrice: mockExportItems[1].unitPrice });
+      .patch(`/exportItems/${exportItem.id}`)
+      .send({ unitPrice: 99.5 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({
-          ...createdExportItem,
-          unitPrice: mockExportItems[1].unitPrice,
-        }),
+        ...json({ ...exportItem, unitPrice: 99.5 }),
         updatedAt: expect.any(String),
       },
     });
@@ -309,7 +231,7 @@ describe("PATCH /exportItems/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/exportItems/badId")
-      .send({ unitPrice: mockExportItems[1].unitPrice });
+      .send({ unitPrice: 99.5 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -321,17 +243,19 @@ describe("PATCH /exportItems/:id", () => {
       },
     ]);
   });
+
   it("should fail if exportItem isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/exportItems/99999999")
-      .send({ unitPrice: mockExportItems[1].unitPrice });
+      .send({ unitPrice: 99.5 });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("ExportItem not found");
   });
+
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/exportItems/${createdExportItem.id}`)
+      .patch(`/exportItems/${seed.exportItems[0].id}`)
       .send({ exportId: -1, variantId: -1, quantity: -1, unitPrice: -1 });
 
     expect(res.status).toBe(400);
@@ -359,42 +283,40 @@ describe("PATCH /exportItems/:id", () => {
       },
     ]);
   });
-    it("should fail if import is not found", async () => {
-      const res: ErrorResponse = await auth()
-        .patch(`/exportItems/${createdExportItem.id}`)
-        .send({ exportId: 99999999 });
 
-      expect(res.status).toBe(409);
-      expect(res.body.message).toBe("No export/variant exists with that ID");
-    });
-    it("should fail if variant is not found", async () => {
-      const res: ErrorResponse = await auth()
-        .patch(`/exportItems/${createdExportItem.id}`)
-        .send({ variantId: 99999999 });
+  it("should fail if export is not found", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/exportItems/${seed.exportItems[0].id}`)
+      .send({ exportId: 99999999 });
 
-      expect(res.status).toBe(409);
-      expect(res.body.message).toBe("No export/variant exists with that ID");
-    });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No export/variant exists with that ID");
+  });
+
+  it("should fail if variant is not found", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/exportItems/${seed.exportItems[0].id}`)
+      .send({ variantId: 99999999 });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No export/variant exists with that ID");
+  });
 });
 
 describe("DELETE /exportItems/:id", () => {
-  let createdExportItem: ExportItem;
-
-  beforeAll(async () => {
-    await prisma.exportItem.deleteMany({});
-    createdExportItem = await prisma.exportItem.create({
-      data: mockExportItems[0],
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
-    const id = createdExportItem.id;
-    const res: ExportItemResponse = await auth().delete(`/exportItems/${id}`);
+    // exportItems[3] is not returned by any customer return item, so it has no children
+    const exportItem = seed.exportItems[3];
+    const res: ExportItemResponse = await auth().delete(
+      `/exportItems/${exportItem.id}`,
+    );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdExportItem) });
+    expect(res.body).toEqual({ data: json(exportItem) });
 
-    const res2: ErrorResponse = await auth().get(`/exportItems/${id}`);
+    const res2: ErrorResponse = await auth().get(
+      `/exportItems/${exportItem.id}`,
+    );
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("ExportItem not found");
@@ -423,10 +345,6 @@ describe("DELETE /exportItems/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.exportItem.deleteMany({});
-  await prisma.export.deleteMany({});
-  await prisma.customer.deleteMany({});
-  await prisma.variant.deleteMany({});
-  await prisma.item.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

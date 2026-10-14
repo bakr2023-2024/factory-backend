@@ -2,48 +2,45 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { Supplier } from "../src/db/generated/prisma/client";
+import { Supplier } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, login,auth } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type SupplierResponse = DataResponse<Supplier>;
 type PaginatedSuppliersResponse = PaginationResponse<Supplier[]>;
+const newSupplier = { name: "new supplier", number: "01234567890" };
+let seed: MockData;
 
-beforeAll(async()=>{
-  await login()
-})
-const mockSuppliers = [
-  { name: "john cena", number: "07775000" },
-  { name: "cm punk", number: "08886000" },
-  { name: "brock lesner", number: "09997000" },
-];
+beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
+  await login();
+});
+
 describe("GET /suppliers", () => {
-  let createdSuppliers: Supplier[] = [];
-
-  beforeAll(async () => {
-    await prisma.supplier.deleteMany({});
-    createdSuppliers = await prisma.supplier.createManyAndReturn({
-      data: mockSuppliers,
-    });
-  });
-
   it("should return all suppliers", async () => {
-    const res: PaginatedSuppliersResponse =
-      await auth().get("/suppliers");
+    const res: PaginatedSuppliersResponse = await auth().get("/suppliers");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdSuppliers,
+        data: seed.suppliers,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdSuppliers.length,
+        totalPages: Math.ceil(seed.suppliers.length / 20),
+        totalCount: seed.suppliers.length,
       }),
     );
   });
@@ -56,71 +53,87 @@ describe("GET /suppliers", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdSuppliers[2]],
+        data: seed.suppliers.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        totalPages: Math.ceil(seed.suppliers.length / 2),
+        totalCount: seed.suppliers.length,
       }),
     );
   });
 
-  it("should return all suppliers that relate to queried name or number", async () => {
+  it("should return all suppliers that relate to queried name", async () => {
+    const supplier = seed.suppliers[2];
+
     const res: PaginatedSuppliersResponse = await auth().get(
-      "/suppliers?name=brock%20lesner",
+      `/suppliers?name=${encodeURIComponent(supplier.name)}`,
     );
-    const filtered = createdSuppliers.filter(
-      (supplier) => supplier.name === createdSuppliers[2].name,
-    );
-    const expectedRes = json({
-      data: filtered,
-      page: 1,
-      size: 20,
-      totalPages: 1,
-      totalCount: filtered.length,
-    });
+
+    const filtered = seed.suppliers.filter((s) => s.name === supplier.name);
+
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(expectedRes);
-    const res2: PaginatedSuppliersResponse = await auth().get(
-      `/suppliers?number=09997000`,
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
     );
-    expect(res2.status).toBe(200);
-    expect(res2.body).toEqual(expectedRes);
   });
-    it("should return all suppliers sorted according to sortBy and order", async () => {
-      const res: PaginatedSuppliersResponse = await auth().get(
-        "/suppliers?sortBy=name&order=desc",
-      );
-      const sorted = createdSuppliers.toSorted((a, b) =>
-        b.name.localeCompare(a.name),
-      );
-      expect(res.status).toBe(200);
-      expect(res.body).toEqual(
-        json({
-          data: sorted,
-          page: 1,
-          size: 20,
-          totalPages: 1,
-          totalCount: sorted.length,
-        }),
-      );
-    });
+
+  it("should return all suppliers that relate to queried number", async () => {
+    const supplier = seed.suppliers[2];
+
+    const res: PaginatedSuppliersResponse = await auth().get(
+      `/suppliers?number=${supplier.number}`,
+    );
+
+    const filtered = seed.suppliers.filter((s) => s.number === supplier.number);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+
+  it("should return all suppliers sorted according to sortBy and order", async () => {
+    const res: PaginatedSuppliersResponse = await auth().get(
+      "/suppliers?sortBy=name&order=desc",
+    );
+
+    const sorted = seed.suppliers.toSorted((a, b) =>
+      b.name.localeCompare(a.name),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: sorted,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(sorted.length / 20),
+        totalCount: sorted.length,
+      }),
+    );
+  });
 });
 
 describe("GET /suppliers/:id", () => {
-  let createdSupplier: Supplier;
-
-  beforeAll(async () => {
-    await prisma.supplier.deleteMany({});
-    createdSupplier = await prisma.supplier.create({ data: mockSuppliers[0] });
-  });
-
   it("should return supplier given valid id", async () => {
-    const id = createdSupplier.id;
-    const res: SupplierResponse = await auth().get(`/suppliers/${id}`);
+    const supplier = seed.suppliers[0];
+
+    const res: SupplierResponse = await auth().get(`/suppliers/${supplier.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdSupplier) });
+    expect(res.body).toEqual({ data: json(supplier) });
   });
 
   it("should fail given invalid id", async () => {
@@ -146,17 +159,16 @@ describe("GET /suppliers/:id", () => {
 });
 
 describe("POST /suppliers", () => {
-  beforeAll(async () => {
-    await prisma.supplier.deleteMany({});
-  });
-
   it("should create supplier successfully given name and number", async () => {
-    const res: SupplierResponse = await auth()
-      .post("/suppliers")
-      .send(mockSuppliers[0]);
+    const payload = {
+      name: "new supplier",
+      number: "01234567890",
+    };
+
+    const res: SupplierResponse = await auth().post("/suppliers").send(payload);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ data: mockSuppliers[0] });
+    expect(res.body).toMatchObject({ data: payload });
   });
 
   it("should fail given invalid name or invalid number", async () => {
@@ -182,24 +194,19 @@ describe("POST /suppliers", () => {
 });
 
 describe("PATCH /suppliers/:id", () => {
-  let createdSupplier: Supplier;
-  beforeAll(async () => {
-    await prisma.supplier.deleteMany({});
-    createdSupplier = await prisma.supplier.create({ data: mockSuppliers[0] });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdSupplier.id;
+    const supplier = seed.suppliers[0];
+
     const res: SupplierResponse = await auth()
-      .patch(`/suppliers/${id}`)
-      .send({ name: mockSuppliers[1].name });
+      .patch(`/suppliers/${supplier.id}`)
+      .send({ name: "updated supplier" });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
         ...json({
-          ...createdSupplier,
-          name: mockSuppliers[1].name,
+          ...supplier,
+          name: "updated supplier",
         }),
         updatedAt: expect.any(String),
       },
@@ -209,7 +216,7 @@ describe("PATCH /suppliers/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/suppliers/badId")
-      .send({ name: mockSuppliers[1].name });
+      .send({ name: "updated supplier" });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -221,17 +228,21 @@ describe("PATCH /suppliers/:id", () => {
       },
     ]);
   });
+
   it("should fail if supplier isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/suppliers/99999999")
-      .send({ name: mockSuppliers[1].name });
+      .send({ name: "updated supplier" });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Supplier not found");
   });
+
   it("should fail given invalid name or invalid number", async () => {
+    const supplier = seed.suppliers[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/suppliers/${createdSupplier.id}`)
+      .patch(`/suppliers/${supplier.id}`)
       .send({ name: "sh", number: "07" });
 
     expect(res.status).toBe(400);
@@ -252,16 +263,15 @@ describe("PATCH /suppliers/:id", () => {
 });
 
 describe("DELETE /suppliers/:id", () => {
-  let createdSupplier: Supplier;
-
-  beforeAll(async () => {
-    await prisma.supplier.deleteMany({});
-    createdSupplier = await prisma.supplier.create({ data: mockSuppliers[0] });
-  });
-
+  let createdSupplier:Supplier;
+  beforeAll(async()=>{
+    createdSupplier = await prisma.supplier.create({data:newSupplier})
+  })
   it("should delete successfully given valid id", async () => {
-    const id = createdSupplier.id;
-    const res: SupplierResponse = await auth().delete(`/suppliers/${id}`);
+    const id = createdSupplier.id
+    const res: SupplierResponse = await auth().delete(
+      `/suppliers/${id}`,
+    );
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSupplier) });
@@ -295,6 +305,6 @@ describe("DELETE /suppliers/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.supplier.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

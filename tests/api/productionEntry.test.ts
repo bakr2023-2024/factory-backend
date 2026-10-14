@@ -1,188 +1,135 @@
 import { config } from "dotenv";
 import { resolve } from "path";
+
 config({ path: resolve("config", ".env.dev") });
-import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import {
-  Item,
-  ItemType,
-  ProductionDay,
-  ProductionEntry,
-  Season,
-  Variant,
-  Week,
-} from "../src/db/generated/prisma/client";
+
+import { afterAll, beforeAll, describe, expect, it } from "@jest/globals";
+import { ProductionEntry } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, auth, login } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  auth,
+  cleanDatabase,
+  json,
+  login,
+  MockData,
+  populateDatabase,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type ProductionEntryResponse = DataResponse<ProductionEntry>;
 type PaginatedProductionEntriesResponse = PaginationResponse<ProductionEntry[]>;
 
-const mockSeason = {
-  name: "season 1",
-  startDate: new Date("2026-09-24T00:00:00Z"),
-};
-let createdSeason: Season;
+let seed: MockData;
 
-const mockWeeks = [
-  {
-    startDate: new Date("2026-09-24T00:00:00Z"),
-  },
-  {
-    startDate: new Date("2026-09-27T00:00:00Z"),
-  },
-];
-let createdWeeks: Week[];
+async function createTestProductionDay(productionDate: string) {
+  return prisma.productionDay.create({
+    data: {
+      productionDate: new Date(`${productionDate}T00:00:00.000Z`),
+      startedAt: new Date(`${productionDate}T08:00:00.000Z`),
+      weekId: seed.weeks[0].id,
+    },
+  });
+}
 
-const mockProductionDays = [
-  {
-    productionDate: new Date("2026-09-24T00:00:00Z"),
-    startedAt: new Date("2026-09-24T08:00:00Z"),
-  },
-  {
-    productionDate: new Date("2026-09-25T00:00:00Z"),
-    startedAt: new Date("2026-09-25T08:00:00Z"),
-  },
-  {
-    productionDate: new Date("2026-09-27T00:00:00Z"),
-    startedAt: new Date("2026-09-27T08:00:00Z"),
-  },
-];
-let createdProductionDays: ProductionDay[];
-
-const mockItems = [
-  { name: "Fruit Tofu", type: ItemType.PRODUCT },
-  { name: "Coffee Tofu", type: ItemType.PRODUCT },
-  { name: "Honey Barrel", type: ItemType.MATERIAL },
-];
-let createdItems: Item[];
-
-const mockVariants: { itemId: number; unitWeight: number }[] = [];
-let createdVariants: Variant[] = [];
-const mockProductionEntries: { productionDayId: number; variantId: number }[] =
-  [];
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-  await prisma.season.deleteMany({});
-  await prisma.week.deleteMany({});
-  await prisma.productionDay.deleteMany({});
-  await prisma.productionEntry.deleteMany({});
-  createdSeason = await prisma.season.create({ data: mockSeason });
-  createdWeeks = await prisma.week.createManyAndReturn({
-    data: mockWeeks.map((w) => ({ ...w, seasonId: createdSeason.id })),
-  });
-  createdProductionDays = await prisma.productionDay.createManyAndReturn({
-    data: [
-      { ...mockProductionDays[0], weekId: createdWeeks[0].id },
-      { ...mockProductionDays[1], weekId: createdWeeks[0].id },
-      { ...mockProductionDays[2], weekId: createdWeeks[1].id },
-    ],
-  });
-  createdItems = await prisma.item.createManyAndReturn({ data: mockItems });
-  mockVariants.push({ itemId: createdItems[0].id, unitWeight: 5 });
-  mockVariants.push({ itemId: createdItems[0].id, unitWeight: 7 });
-  mockVariants.push({ itemId: createdItems[1].id, unitWeight: 3 });
-  createdVariants = await prisma.variant.createManyAndReturn({
-    data: mockVariants,
-  });
-  mockProductionEntries.push({
-    productionDayId: createdProductionDays[0].id,
-    variantId: createdVariants[0].id,
-  });
-  mockProductionEntries.push({
-    productionDayId: createdProductionDays[0].id,
-    variantId: createdVariants[1].id,
-  });
-  mockProductionEntries.push({
-    productionDayId: createdProductionDays[1].id,
-    variantId: createdVariants[2].id,
-  });
 });
+
 describe("GET /productionEntries", () => {
-  let createdProductionEntries: ProductionEntry[] = [];
-
-  beforeAll(async () => {
-    createdProductionEntries = await prisma.productionEntry.createManyAndReturn(
-      {
-        data: mockProductionEntries,
-      },
-    );
-  });
-
   it("should return all productionEntries", async () => {
+    const expected = [...seed.productionEntries].sort((a, b) => a.id - b.id);
+
     const res: PaginatedProductionEntriesResponse =
       await auth().get("/productionEntries");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdProductionEntries,
+        data: expected,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdProductionEntries.length,
+        totalPages: Math.ceil(expected.length / 20),
+        totalCount: expected.length,
       }),
     );
   });
 
   it("should return paginated productionEntries given page and size", async () => {
+    const page = 2;
+    const size = 2;
+    const expected = [...seed.productionEntries]
+      .sort((a, b) => a.id - b.id)
+      .slice((page - 1) * size, page * size);
+
     const res: PaginatedProductionEntriesResponse = await auth().get(
-      "/productionEntries?page=2&size=2",
+      `/productionEntries?page=${page}&size=${size}`,
     );
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdProductionEntries[2]],
-        page: 2,
-        size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        data: expected,
+        page,
+        size,
+        totalPages: Math.ceil(seed.productionEntries.length / size),
+        totalCount: seed.productionEntries.length,
       }),
     );
   });
 
-  it("should return all productionEntries that relate to queried Name", async () => {
+  it("should return all productionEntries that relate to queried item name", async () => {
+    const itemName = seed.items[0].name;
+
     const res: PaginatedProductionEntriesResponse = await auth().get(
-      "/productionEntries?itemName=Fruit%20Tofu",
+      `/productionEntries?itemName=${encodeURIComponent(itemName)}`,
     );
-    const filtered = createdProductionEntries.filter((productionEntry) => {
-      const itemId = createdVariants.find(
-        (v) => v.id === productionEntry.variantId,
-      )!.itemId;
-      const item = createdItems.find(
-        (i) => i.id == itemId && i.name == "Fruit Tofu",
-      );
-      return item;
-    });
-    const expectedRes = json({
-      data: filtered,
-      page: 1,
-      size: 20,
-      totalPages: 1,
-      totalCount: filtered.length,
-    });
+
+    const variantIds = seed.variants
+      .filter((variant) =>
+        seed.items.some(
+          (item) => item.id === variant.itemId && item.name === itemName,
+        ),
+      )
+      .map((variant) => variant.id);
+
+    const filtered = [...seed.productionEntries]
+      .filter((entry) => variantIds.includes(entry.variantId))
+      .sort((a, b) => a.id - b.id);
+
     expect(res.status).toBe(200);
-    expect(res.body).toEqual(expectedRes);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
   });
+
   it("should return all productionEntries sorted according to sortBy and order", async () => {
     const res: PaginatedProductionEntriesResponse = await auth().get(
       "/productionEntries?sortBy=createdAt&order=desc",
     );
-    const sorted = createdProductionEntries.toSorted(
+
+    const sorted = [...seed.productionEntries].sort(
       (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: sorted,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(sorted.length / 20),
         totalCount: sorted.length,
       }),
     );
@@ -190,23 +137,15 @@ describe("GET /productionEntries", () => {
 });
 
 describe("GET /productionEntries/:id", () => {
-  let createdProductionEntry: ProductionEntry;
-
-  beforeAll(async () => {
-    await prisma.productionEntry.deleteMany({});
-    createdProductionEntry = await prisma.productionEntry.create({
-      data: mockProductionEntries[0],
-    });
-  });
-
   it("should return productionEntry given valid id", async () => {
-    const id = createdProductionEntry.id;
+    const productionEntry = seed.productionEntries[0];
+
     const res: ProductionEntryResponse = await auth().get(
-      `/productionEntries/${id}`,
+      `/productionEntries/${productionEntry.id}`,
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdProductionEntry) });
+    expect(res.body).toEqual({ data: json(productionEntry) });
   });
 
   it("should fail given invalid id", async () => {
@@ -232,17 +171,25 @@ describe("GET /productionEntries/:id", () => {
 });
 
 describe("POST /productionEntries", () => {
+  let productionDayId: number;
+
   beforeAll(async () => {
-    await prisma.productionEntry.deleteMany({});
+    const productionDay = await createTestProductionDay("2098-01-01");
+    productionDayId = productionDay.id;
   });
 
   it("should create productionEntry successfully given valid data", async () => {
+    const body = {
+      productionDayId,
+      variantId: seed.variants[0].id,
+    };
+
     const res: ProductionEntryResponse = await auth()
       .post("/productionEntries")
-      .send(mockProductionEntries[0]);
+      .send(body);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject(json({ data: mockProductionEntries[0] }));
+    expect(res.body).toMatchObject(json({ data: body }));
   });
 
   it("should fail given invalid data", async () => {
@@ -265,20 +212,30 @@ describe("POST /productionEntries", () => {
       },
     ]);
   });
+
   it("should fail if productionDay isn't found", async () => {
     const res: ErrorResponse = await auth()
       .post("/productionEntries")
-      .send({ ...mockProductionEntries[1], productionDayId: 99999999 });
+      .send({
+        productionDayId: 99999999,
+        variantId: seed.variants[0].id,
+      });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
       "No productionDay/variant exists with that ID",
     );
   });
+
   it("should fail if variant isn't found", async () => {
+    const productionDay = await createTestProductionDay("2098-01-02");
+
     const res: ErrorResponse = await auth()
       .post("/productionEntries")
-      .send({ ...mockProductionEntries[1], variantId: 99999999 });
+      .send({
+        productionDayId: productionDay.id,
+        variantId: 99999999,
+      });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
@@ -288,26 +245,26 @@ describe("POST /productionEntries", () => {
 });
 
 describe("PATCH /productionEntries/:id", () => {
-  let createdProductionEntry: ProductionEntry;
+  let productionDayId: number;
+
   beforeAll(async () => {
-    await prisma.productionEntry.deleteMany({});
-    createdProductionEntry = await prisma.productionEntry.create({
-      data: mockProductionEntries[0],
-    });
+    const productionDay = await createTestProductionDay("2098-02-01");
+    productionDayId = productionDay.id;
   });
 
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdProductionEntry.id;
+    const productionEntry = seed.productionEntries[0];
+
     const res: ProductionEntryResponse = await auth()
-      .patch(`/productionEntries/${id}`)
-      .send({ productionDayId: createdProductionDays[2].id });
+      .patch(`/productionEntries/${productionEntry.id}`)
+      .send({ productionDayId });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
         ...json({
-          ...createdProductionEntry,
-          productionDayId: createdProductionDays[2].id,
+          ...productionEntry,
+          productionDayId,
         }),
         updatedAt: expect.any(String),
       },
@@ -317,7 +274,7 @@ describe("PATCH /productionEntries/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/productionEntries/badId")
-      .send({ productionDayId: createdProductionDays[2].id });
+      .send({ productionDayId });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -329,17 +286,21 @@ describe("PATCH /productionEntries/:id", () => {
       },
     ]);
   });
+
   it("should fail if productionEntry isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/productionEntries/99999999")
-      .send({ productionDayId: createdProductionDays[2].id });
+      .send({ productionDayId });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("ProductionEntry not found");
   });
+
   it("should fail given invalid data", async () => {
+    const productionEntry = seed.productionEntries[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/productionEntries/${createdProductionEntry.id}`)
+      .patch(`/productionEntries/${productionEntry.id}`)
       .send({ productionDayId: -1 });
 
     expect(res.status).toBe(400);
@@ -352,9 +313,12 @@ describe("PATCH /productionEntries/:id", () => {
       },
     ]);
   });
+
   it("should fail if productionDay is not found", async () => {
+    const productionEntry = seed.productionEntries[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/productionEntries/${createdProductionEntry.id}`)
+      .patch(`/productionEntries/${productionEntry.id}`)
       .send({ productionDayId: 99999999 });
 
     expect(res.status).toBe(409);
@@ -362,9 +326,12 @@ describe("PATCH /productionEntries/:id", () => {
       "No productionDay/variant exists with that ID",
     );
   });
+
   it("should fail if variant is not found", async () => {
+    const productionEntry = seed.productionEntries[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/productionEntries/${createdProductionEntry.id}`)
+      .patch(`/productionEntries/${productionEntry.id}`)
       .send({ variantId: 99999999 });
 
     expect(res.status).toBe(409);
@@ -375,25 +342,30 @@ describe("PATCH /productionEntries/:id", () => {
 });
 
 describe("DELETE /productionEntries/:id", () => {
-  let createdProductionEntry: ProductionEntry;
+  let productionEntry: ProductionEntry;
 
   beforeAll(async () => {
-    await prisma.productionEntry.deleteMany({});
-    createdProductionEntry = await prisma.productionEntry.create({
-      data: mockProductionEntries[0],
+    const productionDay = await createTestProductionDay("2098-03-01");
+
+    productionEntry = await prisma.productionEntry.create({
+      data: {
+        productionDayId: productionDay.id,
+        variantId: seed.variants[0].id,
+      },
     });
   });
 
   it("should delete successfully given valid id", async () => {
-    const id = createdProductionEntry.id;
     const res: ProductionEntryResponse = await auth().delete(
-      `/productionEntries/${id}`,
+      `/productionEntries/${productionEntry.id}`,
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdProductionEntry) });
+    expect(res.body).toEqual({ data: json(productionEntry) });
 
-    const res2: ErrorResponse = await auth().get(`/productionEntries/${id}`);
+    const res2: ErrorResponse = await auth().get(
+      `/productionEntries/${productionEntry.id}`,
+    );
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("ProductionEntry not found");
@@ -424,11 +396,6 @@ describe("DELETE /productionEntries/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.productionEntry.deleteMany({});
-  await prisma.productionDay.deleteMany({});
-  await prisma.week.deleteMany({});
-  await prisma.season.deleteMany({});
-  await prisma.variant.deleteMany({});
-  await prisma.item.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

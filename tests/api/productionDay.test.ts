@@ -3,104 +3,34 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { ProductionDay, Season, Week } from "../src/db/generated/prisma/client";
-
+import { ProductionDay } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-
-import { json, login, auth } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type ProductionDayResponse = DataResponse<ProductionDay>;
 type PaginatedProductionDaysResponse = PaginationResponse<ProductionDay[]>;
 
-let createdSeason: Season;
-let createdWeeks: Week[];
-
-const mockSeason = {
-  name: "season 1",
-  startDate: new Date("2026-09-24T00:00:00Z"),
-};
-
-const mockWeeks = [
-  {
-    startDate: new Date("2026-09-24T00:00:00Z"),
-  },
-  {
-    startDate: new Date("2026-09-27T00:00:00Z"),
-  },
-];
-
-let mockProductionDays: {
-  weekId: number;
-  productionDate: string;
-  startedAt: string;
-  endedAt: string;
-  notes?: string;
-}[];
+let seed: MockData;
 
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-
-  await prisma.productionDay.deleteMany({});
-  await prisma.week.deleteMany({});
-  await prisma.season.deleteMany({});
-
-  createdSeason = await prisma.season.create({
-    data: mockSeason,
-  });
-
-  createdWeeks = await prisma.week.createManyAndReturn({
-    data: mockWeeks.map((week) => ({
-      ...week,
-      seasonId: createdSeason.id,
-    })),
-  });
-
-  mockProductionDays = [
-    {
-      weekId: createdWeeks[0].id,
-      productionDate: "2026-09-24",
-      startedAt: "2026-09-24T07:00:00Z",
-      endedAt: "2026-09-24T15:00:00Z",
-      notes: "Production day 1",
-    },
-    {
-      weekId: createdWeeks[0].id,
-      productionDate: "2026-09-25",
-      startedAt: "2026-09-25T08:00:00Z",
-      endedAt: "2026-09-25T16:00:00Z",
-      notes: "Production day 2",
-    },
-    {
-      weekId: createdWeeks[1].id,
-      productionDate: "2026-09-27",
-      startedAt: "2026-09-27T09:00:00Z",
-      endedAt: "2026-09-27T17:00:00Z",
-      notes: "Production day 3",
-    },
-  ];
 });
 
 describe("GET /productionDays", () => {
-  let createdProductionDays: ProductionDay[] = [];
-
-  beforeAll(async () => {
-    await prisma.productionDay.deleteMany({});
-
-    createdProductionDays = await prisma.productionDay.createManyAndReturn({
-      data: mockProductionDays.map((day) => ({
-        ...day,
-        productionDate: new Date(day.productionDate),
-        startedAt: new Date(day.startedAt),
-        endedAt: new Date(day.endedAt),
-      })),
-    });
-  });
-
   it("should return all production days", async () => {
     const res: PaginatedProductionDaysResponse =
       await auth().get("/productionDays");
@@ -108,11 +38,11 @@ describe("GET /productionDays", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdProductionDays,
+        data: seed.productionDays,
         page: 1,
         size: 20,
         totalPages: 1,
-        totalCount: createdProductionDays.length,
+        totalCount: seed.productionDays.length,
       }),
     );
   });
@@ -125,22 +55,24 @@ describe("GET /productionDays", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdProductionDays[2]],
+        data: [seed.productionDays[2]],
         page: 2,
         size: 2,
         totalPages: 2,
-        totalCount: 3,
+        totalCount: seed.productionDays.length,
       }),
     );
   });
 
   it("should return production days given weekId", async () => {
+    const weekId = seed.weeks[0].id;
+
     const res: PaginatedProductionDaysResponse = await auth().get(
-      `/productionDays?weekId=${createdWeeks[0].id}`,
+      `/productionDays?weekId=${weekId}`,
     );
 
-    const filtered = createdProductionDays.filter(
-      (productionDay) => productionDay.weekId === createdWeeks[0].id,
+    const filtered = seed.productionDays.filter(
+      (productionDay) => productionDay.weekId === weekId,
     );
 
     expect(res.status).toBe(200);
@@ -149,19 +81,22 @@ describe("GET /productionDays", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
-  it("should return production day given productionDate", async () => {
-    const productionDate = "2026-09-25";
+  it("should return production days given productionDate", async () => {
+    const productionDate = seed.productionDays[1].productionDate
+      .toISOString()
+      .slice(0, 10);
 
-    const res: ProductionDayResponse = await auth().get(
+    const res: PaginatedProductionDaysResponse = await auth().get(
       `/productionDays?productionDate=${productionDate}`,
     );
-    const filtered = createdProductionDays.filter(
+
+    const filtered = seed.productionDays.filter(
       (productionDay) =>
         productionDay.productionDate.toISOString().slice(0, 10) ===
         productionDate,
@@ -173,15 +108,15 @@ describe("GET /productionDays", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return production days started between startedFrom and startedTo", async () => {
-    const startedFrom = "2026-09-24T07:30:00Z";
-    const startedTo = "2026-09-27T08:30:00Z";
+    const startedFrom = seed.productionDays[0].startedAt.toISOString();
+    const startedTo = seed.productionDays[2].startedAt.toISOString();
 
     const res: PaginatedProductionDaysResponse = await auth().get(
       `/productionDays?startedFrom=${startedFrom}&startedTo=${startedTo}`,
@@ -190,7 +125,7 @@ describe("GET /productionDays", () => {
     const from = new Date(startedFrom);
     const to = new Date(startedTo);
 
-    const filtered = createdProductionDays.filter(
+    const filtered = seed.productionDays.filter(
       ({ startedAt }) => startedAt >= from && startedAt <= to,
     );
 
@@ -200,15 +135,17 @@ describe("GET /productionDays", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return production days ended between endedFrom and endedTo", async () => {
-    const endedFrom = "2026-09-24T14:00:00Z";
-    const endedTo = "2026-09-27T16:00:00Z";
+    const endedFrom = seed.productionDays[0].productionDate.toISOString();
+    const endedTo = new Date(
+      seed.productionDays[2].productionDate.getTime() + 24 * 60 * 60 * 1000,
+    ).toISOString();
 
     const res: PaginatedProductionDaysResponse = await auth().get(
       `/productionDays?endedFrom=${endedFrom}&endedTo=${endedTo}`,
@@ -217,7 +154,7 @@ describe("GET /productionDays", () => {
     const from = new Date(endedFrom);
     const to = new Date(endedTo);
 
-    const filtered = createdProductionDays.filter(
+    const filtered = seed.productionDays.filter(
       ({ endedAt }) => endedAt !== null && endedAt >= from && endedAt <= to,
     );
 
@@ -227,7 +164,7 @@ describe("GET /productionDays", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
@@ -237,7 +174,8 @@ describe("GET /productionDays", () => {
     const res: PaginatedProductionDaysResponse = await auth().get(
       "/productionDays?sortBy=startedAt&order=desc",
     );
-    const sorted = createdProductionDays.toSorted(
+
+    const sorted = seed.productionDays.toSorted(
       (a, b) => b.startedAt.getTime() - a.startedAt.getTime(),
     );
 
@@ -255,31 +193,16 @@ describe("GET /productionDays", () => {
 });
 
 describe("GET /productionDays/:id", () => {
-  let createdProductionDay: ProductionDay;
-
-  beforeAll(async () => {
-    await prisma.productionDay.deleteMany({});
-
-    createdProductionDay = await prisma.productionDay.create({
-      data: {
-        ...mockProductionDays[0],
-        productionDate: new Date(mockProductionDays[0].productionDate),
-        startedAt: new Date(mockProductionDays[0].startedAt),
-        endedAt: new Date(mockProductionDays[0].endedAt),
-      },
-    });
-  });
-
   it("should return production day given valid id", async () => {
-    const id = createdProductionDay.id;
+    const productionDay = seed.productionDays[0];
 
     const res: ProductionDayResponse = await auth().get(
-      `/productionDays/${id}`,
+      `/productionDays/${productionDay.id}`,
     );
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      data: json(createdProductionDay),
+      data: json(productionDay),
     });
   });
 
@@ -306,23 +229,27 @@ describe("GET /productionDays/:id", () => {
 });
 
 describe("POST /productionDays", () => {
-  beforeAll(async () => {
-    await prisma.productionDay.deleteMany({});
-  });
-
   it("should create production day successfully", async () => {
+    const body = {
+      weekId: seed.weeks[0].id,
+      productionDate: "2026-10-30",
+      startedAt: "2026-10-30T07:00:00Z",
+      endedAt: "2026-10-30T15:00:00Z",
+      notes: "New production day",
+    };
+
     const res: ProductionDayResponse = await auth()
       .post("/productionDays")
-      .send(mockProductionDays[0]);
-      
+      .send(body);
+
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
       data: {
-        weekId: mockProductionDays[0].weekId,
+        weekId: body.weekId,
         productionDate: expect.any(String),
         startedAt: expect.any(String),
         endedAt: expect.any(String),
-        notes: mockProductionDays[0].notes,
+        notes: body.notes,
       },
     });
   });
@@ -337,7 +264,6 @@ describe("POST /productionDays", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
-
     expect(res.body.cause).toEqual([
       {
         key: "body",
@@ -365,8 +291,8 @@ describe("POST /productionDays", () => {
   it("should fail if week is not found", async () => {
     const res: ErrorResponse = await auth().post("/productionDays").send({
       weekId: 99999999,
-      productionDate: "2026-10-01",
-      startedAt: "2026-10-01T07:00:00Z",
+      productionDate: "2026-10-31",
+      startedAt: "2026-10-31T07:00:00Z",
     });
 
     expect(res.status).toBe(409);
@@ -375,35 +301,19 @@ describe("POST /productionDays", () => {
 });
 
 describe("PATCH /productionDays/:id", () => {
-  let createdProductionDay: ProductionDay;
-
-  beforeAll(async () => {
-    await prisma.productionDay.deleteMany({});
-
-    createdProductionDay = await prisma.productionDay.create({
-      data: {
-        ...mockProductionDays[0],
-        productionDate: new Date(mockProductionDays[0].productionDate),
-        startedAt: new Date(mockProductionDays[0].startedAt),
-        endedAt: new Date(mockProductionDays[0].endedAt),
-      },
-    });
-  });
-
   it("should correctly update fields", async () => {
-    const id = createdProductionDay.id;
+    const productionDay = seed.productionDays[0];
 
     const res: ProductionDayResponse = await auth()
-      .patch(`/productionDays/${id}`)
+      .patch(`/productionDays/${productionDay.id}`)
       .send({
         notes: "Updated notes",
       });
 
     expect(res.status).toBe(200);
-
     expect(res.body).toEqual({
       data: {
-        ...json(createdProductionDay),
+        ...json(productionDay),
         notes: "Updated notes",
         updatedAt: expect.any(String),
       },
@@ -437,7 +347,7 @@ describe("PATCH /productionDays/:id", () => {
 
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/productionDays/${createdProductionDay.id}`)
+      .patch(`/productionDays/${seed.productionDays[0].id}`)
       .send({
         weekId: -1,
         productionDate: "invalid",
@@ -447,7 +357,6 @@ describe("PATCH /productionDays/:id", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
-
     expect(res.body.cause).toEqual([
       {
         key: "body",
@@ -474,7 +383,7 @@ describe("PATCH /productionDays/:id", () => {
 
   it("should fail if week is not found", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/productionDays/${createdProductionDay.id}`)
+      .patch(`/productionDays/${seed.productionDays[0].id}`)
       .send({
         weekId: 99999999,
       });
@@ -488,14 +397,13 @@ describe("DELETE /productionDays/:id", () => {
   let createdProductionDay: ProductionDay;
 
   beforeAll(async () => {
-    await prisma.productionDay.deleteMany({});
-
     createdProductionDay = await prisma.productionDay.create({
       data: {
-        ...mockProductionDays[0],
-        productionDate: new Date(mockProductionDays[0].productionDate),
-        startedAt: new Date(mockProductionDays[0].startedAt),
-        endedAt: new Date(mockProductionDays[0].endedAt),
+        weekId: seed.weeks[0].id,
+        productionDate: new Date("2026-10-31T00:00:00.000Z"),
+        startedAt: new Date("2026-10-31T07:00:00.000Z"),
+        endedAt: new Date("2026-10-31T15:00:00.000Z"),
+        notes: "Production day for delete tests",
       },
     });
   });
@@ -541,8 +449,6 @@ describe("DELETE /productionDays/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.productionDay.deleteMany({});
-  await prisma.week.deleteMany({});
-  await prisma.season.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

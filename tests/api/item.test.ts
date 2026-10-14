@@ -2,48 +2,47 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { ItemType } from "../src/db/generated/prisma/enums";
-import { Item } from "../src/db/generated/prisma/client";
+import { ItemType } from "../../src/db/generated/prisma/enums";
+import { Item } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, login, auth } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type ItemResponse = DataResponse<Item>;
 type PaginatedItemsResponse = PaginationResponse<Item[]>;
 
-const mockItems = [
-  { name: "Fruit Tofu", type: ItemType.PRODUCT },
-  { name: "Coffee Tofu", type: ItemType.PRODUCT },
-  { name: "Honey Barrel", type: ItemType.MATERIAL },
-];
+const newItem = { name: "New Item", type: ItemType.MATERIAL };
+
+let seed: MockData;
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
 });
+
 describe("GET /items", () => {
-  let createdItems: Item[] = [];
-
-  beforeAll(async () => {
-    await prisma.item.deleteMany({});
-    createdItems = await prisma.item.createManyAndReturn({
-      data: mockItems,
-    });
-  });
-
   it("should return all items", async () => {
     const res: PaginatedItemsResponse = await auth().get("/items");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdItems,
+        data: seed.items,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdItems.length,
+        totalPages: Math.ceil(seed.items.length / 20),
+        totalCount: seed.items.length,
       }),
     );
   });
@@ -56,19 +55,18 @@ describe("GET /items", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdItems[2]],
+        data: seed.items.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        totalPages: Math.ceil(seed.items.length / 2),
+        totalCount: seed.items.length,
       }),
     );
   });
 
   it("should return all items that contain search key", async () => {
     const res: PaginatedItemsResponse = await auth().get("/items?name=tofu");
-
-    const filtered = createdItems.filter((item) =>
+    const filtered = seed.items.filter((item) =>
       item.name.toLowerCase().includes("tofu"),
     );
 
@@ -78,25 +76,25 @@ describe("GET /items", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
+
   it("should return all items sorted according to sortBy and order", async () => {
     const res: PaginatedItemsResponse = await auth().get(
       "/items?sortBy=name&order=desc",
     );
-    const sorted = createdItems.toSorted((a, b) =>
-      b.name.localeCompare(a.name),
-    );
+    const sorted = seed.items.toSorted((a, b) => b.name.localeCompare(a.name));
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: sorted,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(sorted.length / 20),
         totalCount: sorted.length,
       }),
     );
@@ -104,19 +102,12 @@ describe("GET /items", () => {
 });
 
 describe("GET /items/:id", () => {
-  let createdItem: Item;
-
-  beforeAll(async () => {
-    await prisma.item.deleteMany({});
-    createdItem = await prisma.item.create({ data: mockItems[0] });
-  });
-
   it("should return item given valid id", async () => {
-    const id = createdItem.id;
-    const res: ItemResponse = await auth().get(`/items/${id}`);
+    const item = seed.items[0];
+    const res: ItemResponse = await auth().get(`/items/${item.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body.data).toEqual(json(createdItem));
+    expect(res.body.data).toEqual(json(item));
   });
 
   it("should fail given invalid id", async () => {
@@ -142,19 +133,17 @@ describe("GET /items/:id", () => {
 });
 
 describe("POST /items", () => {
-  beforeAll(async () => {
-    await prisma.item.deleteMany({});
-  });
-
   it("should create item successfully given name and type", async () => {
-    const res: ItemResponse = await auth().post("/items").send(mockItems[0]);
+    const res: ItemResponse = await auth().post("/items").send(newItem);
 
     expect(res.status).toBe(201);
-    expect(res.body.data).toMatchObject(mockItems[0]);
+    expect(res.body.data).toMatchObject(newItem);
   });
 
   it("should fail given duplicate name", async () => {
-    const res: ErrorResponse = await auth().post("/items").send(mockItems[0]);
+    const res: ErrorResponse = await auth()
+      .post("/items")
+      .send({ name: seed.items[0].name, type: seed.items[0].type });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("An item with this name already exists");
@@ -162,23 +151,17 @@ describe("POST /items", () => {
 });
 
 describe("PATCH /items/:id", () => {
-  let createdItems: Item[];
   const newName = "Unique item";
 
-  beforeAll(async () => {
-    await prisma.item.deleteMany({});
-    createdItems = await prisma.item.createManyAndReturn({ data: mockItems });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdItems[0].id;
+    const item = seed.items[0];
     const res: ItemResponse = await auth()
-      .patch(`/items/${id}`)
+      .patch(`/items/${item.id}`)
       .send({ name: newName });
 
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({
-      ...json(createdItems[0]),
+      ...json(item),
       name: newName,
       updatedAt: expect.any(String),
     });
@@ -210,10 +193,9 @@ describe("PATCH /items/:id", () => {
   });
 
   it("should fail given duplicate name", async () => {
-    const id = createdItems[0].id;
     const res: ErrorResponse = await auth()
-      .patch(`/items/${id}`)
-      .send({ name: createdItems[1].name });
+      .patch(`/items/${seed.items[0].id}`)
+      .send({ name: seed.items[1].name });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("An item with this name already exists");
@@ -221,11 +203,13 @@ describe("PATCH /items/:id", () => {
 });
 
 describe("DELETE /items/:id", () => {
+  // every seeded item has variants that are used by other rows, so delete one with no children
   let createdItem: Item;
 
   beforeAll(async () => {
-    await prisma.item.deleteMany({});
-    createdItem = await prisma.item.create({ data: mockItems[0] });
+    createdItem = await prisma.item.create({
+      data: { name: "Disposable item", type: ItemType.PRODUCT },
+    });
   });
 
   it("should delete successfully given valid id", async () => {
@@ -264,6 +248,6 @@ describe("DELETE /items/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.item.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

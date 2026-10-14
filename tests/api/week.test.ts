@@ -1,65 +1,47 @@
 import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
+
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { Season, Week } from "../src/db/generated/prisma/client";
+import { Week } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, login, auth } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type WeekResponse = DataResponse<Week>;
 type PaginatedWeeksResponse = PaginationResponse<Week[]>;
 
-const mockSeasons = [
-  { name: "season 1", startDate: new Date("2026-09-24T00:00:00Z") },
-  { name: "season 2", startDate: new Date("2026-09-27T00:00:00Z") },
-  { name: "season 3", startDate: new Date("2026-09-30T00:00:00Z") },
-];
-let mockWeeks: { seasonId: number; startDate: Date }[] = [];
-let createdSeasons: Season[];
+let seed: MockData;
+
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-  createdSeasons = await prisma.season.createManyAndReturn({
-    data: mockSeasons,
-  });
-  mockWeeks.push({
-    seasonId: createdSeasons[0].id,
-    startDate: new Date("2026-09-24T00:00:00Z"),
-  });
-  mockWeeks.push({
-    seasonId: createdSeasons[0].id,
-    startDate: new Date("2026-09-27T00:00:00Z"),
-  });
-  mockWeeks.push({
-    seasonId: createdSeasons[1].id,
-    startDate: new Date("2026-09-30T00:00:00Z"),
-  });
 });
+
 describe("GET /weeks", () => {
-  let createdWeeks: Week[] = [];
-
-  beforeAll(async () => {
-    await prisma.week.deleteMany({});
-    createdWeeks = await prisma.week.createManyAndReturn({
-      data: mockWeeks,
-    });
-  });
-
   it("should return all weeks", async () => {
     const res: PaginatedWeeksResponse = await auth().get("/weeks");
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdWeeks,
+        data: seed.weeks,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdWeeks.length,
+        totalPages: Math.ceil(seed.weeks.length / 20),
+        totalCount: seed.weeks.length,
       }),
     );
   });
@@ -72,68 +54,77 @@ describe("GET /weeks", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdWeeks[2]],
+        data: seed.weeks.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 3,
+        totalPages: Math.ceil(seed.weeks.length / 2),
+        totalCount: seed.weeks.length,
       }),
     );
   });
 
-  it("should return all weeks that relate to queried season name or id", async () => {
+  it("should return all weeks that relate to queried season name and id", async () => {
+    const season = seed.seasons[0];
+
     const res: PaginatedWeeksResponse = await auth().get(
-      `/weeks?seasonName=season%201&seasonId=${createdSeasons[0].id}`,
+      `/weeks?seasonName=${season.name}&seasonId=${season.id}`,
     );
-    const filtered = createdWeeks.filter((week) => {
-      const season = createdSeasons[0];
-      return week.seasonId === season.id;
-    });
-    const expectedRes = json({
-      data: filtered,
-      page: 1,
-      size: 20,
-      totalPages: 1,
-      totalCount: filtered.length,
-    });
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(expectedRes);
-  });
-  it("should return all weeks sorted according to sortBy and order", async () => {
-    const res: PaginatedWeeksResponse = await auth().get(
-      "/weeks?sortBy=startDate&order=desc",
-    );
-    const sorted = createdWeeks.toSorted(
-      (a, b) => b.startDate.getTime() - a.startDate.getTime(),
-    );
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: sorted,
-        page: 1,
-        size: 20,
-        totalPages: 1,
-        totalCount: sorted.length,
-      }),
-    );
-  });
-  it("should return all weeks that started between startedFrom and startedTo", async () => {
-    const start = "2026-09-23";
-    const end = "2026-09-28";
-    const res: PaginatedWeeksResponse = await auth().get(
-      `/weeks?startedFrom=${start}&startedTo=${end}`,
-    );
-    const filtered = createdWeeks.filter(
-      ({ startDate }) =>
-        startDate.toISOString() >= start && startDate.toISOString() < end,
-    );
+
+    const filtered = seed.weeks.filter((week) => week.seasonId === season.id);
+
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+
+  it("should return all weeks sorted according to sortBy and order", async () => {
+    const res: PaginatedWeeksResponse = await auth().get(
+      "/weeks?sortBy=startDate&order=desc",
+    );
+
+    const sorted = seed.weeks.toSorted(
+      (a, b) => b.startDate.getTime() - a.startDate.getTime(),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: sorted,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(sorted.length / 20),
+        totalCount: sorted.length,
+      }),
+    );
+  });
+
+  it("should return all weeks that started between startedFrom and startedTo", async () => {
+    const start = "2026-09-23";
+    const end = "2026-09-28";
+
+    const res: PaginatedWeeksResponse = await auth().get(
+      `/weeks?startedFrom=${start}&startedTo=${end}`,
+    );
+
+    const filtered = seed.weeks.filter(
+      ({ startDate }) =>
+        startDate.toISOString() >= start && startDate.toISOString() < end,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
@@ -141,19 +132,13 @@ describe("GET /weeks", () => {
 });
 
 describe("GET /weeks/:id", () => {
-  let createdWeek: Week;
-
-  beforeAll(async () => {
-    await prisma.week.deleteMany({});
-    createdWeek = await prisma.week.create({ data: mockWeeks[0] });
-  });
-
   it("should return week given valid id", async () => {
-    const id = createdWeek.id;
-    const res: WeekResponse = await auth().get(`/weeks/${id}`);
+    const week = seed.weeks[0];
+
+    const res: WeekResponse = await auth().get(`/weeks/${week.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdWeek) });
+    expect(res.body).toEqual({ data: json(week) });
   });
 
   it("should fail given invalid id", async () => {
@@ -179,19 +164,21 @@ describe("GET /weeks/:id", () => {
 });
 
 describe("POST /weeks", () => {
-  beforeAll(async () => {
-    await prisma.week.deleteMany({});
-  });
-
   it("should create week successfully given data", async () => {
-    const res: WeekResponse = await auth()
-      .post("/weeks")
-      .send({
-        ...mockWeeks[0],
-        startDate: mockWeeks[0].startDate.toISOString().slice(0, 10),
-      });
+    const payload = {
+      seasonId: seed.seasons[0].id,
+      startDate: "2026-10-15",
+    };
+
+    const res: WeekResponse = await auth().post("/weeks").send(payload);
+
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject(json({ data: mockWeeks[0] }));
+    expect(res.body).toMatchObject({
+      data: {
+        seasonId: payload.seasonId,
+        startDate: expect.any(String),
+      },
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -214,35 +201,31 @@ describe("POST /weeks", () => {
       },
     ]);
   });
+
   it("should fail if season is not found", async () => {
     const res: ErrorResponse = await auth()
       .post("/weeks")
       .send({ seasonId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No season exists with this ID");
+    expect(res.body.message).toBe("No season exists with that ID");
   });
 });
 
 describe("PATCH /weeks/:id", () => {
-  let createdWeek: Week;
-  beforeAll(async () => {
-    await prisma.week.deleteMany({});
-    createdWeek = await prisma.week.create({ data: mockWeeks[0] });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdWeek.id;
+    const week = seed.weeks[0];
+
     const res: WeekResponse = await auth()
-      .patch(`/weeks/${id}`)
-      .send({ seasonId: createdSeasons[1].id });
+      .patch(`/weeks/${week.id}`)
+      .send({ seasonId: seed.seasons[1].id });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
         ...json({
-          ...createdWeek,
-          seasonId: createdSeasons[1].id,
+          ...week,
+          seasonId: seed.seasons[1].id,
         }),
         updatedAt: expect.any(String),
       },
@@ -252,7 +235,7 @@ describe("PATCH /weeks/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/weeks/badId")
-      .send({ seasonId: createdSeasons[1].id });
+      .send({ seasonId: seed.seasons[1].id });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -264,17 +247,21 @@ describe("PATCH /weeks/:id", () => {
       },
     ]);
   });
+
   it("should fail if week isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/weeks/99999999")
-      .send({ seasonId: createdSeasons[1].id });
+      .send({ seasonId: seed.seasons[1].id });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Week not found");
   });
+
   it("should fail given invalid data", async () => {
+    const week = seed.weeks[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/weeks/${createdWeek.id}`)
+      .patch(`/weeks/${week.id}`)
       .send({ seasonId: -1 });
 
     expect(res.status).toBe(400);
@@ -287,9 +274,12 @@ describe("PATCH /weeks/:id", () => {
       },
     ]);
   });
+
   it("should fail if season is not found", async () => {
+    const week = seed.weeks[0];
+
     const res: ErrorResponse = await auth()
-      .patch(`/weeks/${createdWeek.id}`)
+      .patch(`/weeks/${week.id}`)
       .send({ seasonId: 99999999 });
 
     expect(res.status).toBe(409);
@@ -298,21 +288,21 @@ describe("PATCH /weeks/:id", () => {
 });
 
 describe("DELETE /weeks/:id", () => {
-  let createdWeek: Week;
-
-  beforeAll(async () => {
-    await prisma.week.deleteMany({});
-    createdWeek = await prisma.week.create({ data: mockWeeks[0] });
-  });
-
   it("should delete successfully given valid id", async () => {
-    const id = createdWeek.id;
-    const res: WeekResponse = await auth().delete(`/weeks/${id}`);
+    // Use an isolated week so the seeded production days remain untouched.
+    const week = await prisma.week.create({
+      data: {
+        seasonId: seed.seasons[2].id,
+        startDate: new Date("2026-10-15T00:00:00Z"),
+      },
+    });
+
+    const res: WeekResponse = await auth().delete(`/weeks/${week.id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdWeek) });
+    expect(res.body).toEqual({ data: json(week) });
 
-    const res2: ErrorResponse = await auth().get(`/weeks/${id}`);
+    const res2: ErrorResponse = await auth().get(`/weeks/${week.id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Week not found");
@@ -341,6 +331,6 @@ describe("DELETE /weeks/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.week.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });

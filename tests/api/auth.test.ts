@@ -2,14 +2,22 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import request from "supertest";
-import app from "../src/app";
+import app from "../../src/app";
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
 import { verify } from "jsonwebtoken";
-import prisma from "../src/db/prisma";
-import { DataResponse, ErrorResponse } from "../src/utils/types/response.types";
-import { Item, ItemType, Role, User } from "../src/db/generated/prisma/client";
-import { signToken } from "../src/utils/security/token.security";
-import { json } from "./helpers/auth";
+import prisma from "../../src/db/prisma";
+import {
+  DataResponse,
+  ErrorResponse,
+} from "../../src/utils/types/response.types";
+import {
+  Item,
+  ItemType,
+  Role,
+  User,
+} from "../../src/db/generated/prisma/client";
+import { signToken } from "../../src/utils/security/token.security";
+import { json } from "../utils";
 type SignupResponse = DataResponse<User>;
 type LoginResponse = DataResponse<string>;
 type ItemResponse = DataResponse<Item>;

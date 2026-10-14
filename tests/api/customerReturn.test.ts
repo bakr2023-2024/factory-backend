@@ -3,93 +3,33 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import {
-  Customer,
-  CustomerReturn,
-} from "../src/db/generated/prisma/client";
+import { CustomerReturn } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
   PaginationResponse,
-} from "../src/utils/types/response.types";
-import { json, auth, login } from "./helpers/auth";
-import prisma from "../src/db/prisma";
+} from "../../src/utils/types/response.types";
+import {
+  json,
+  auth,
+  login,
+  cleanDatabase,
+  populateDatabase,
+  MockData,
+} from "../utils";
+import prisma from "../../src/db/prisma";
 
 type CustomerReturnResponse = DataResponse<CustomerReturn>;
-type PaginatedCustomerReturnsResponse =
-  PaginationResponse<CustomerReturn[]>;
+type PaginatedCustomerReturnsResponse = PaginationResponse<CustomerReturn[]>;
 
-const mockCustomers = [
-  {
-    name: "Customer One",
-    number: "01000000001",
-    notes: "First customer",
-  },
-  {
-    name: "Customer Two",
-    number: "01000000002",
-    notes: "Second customer",
-  },
-  {
-    name: "Customer Three",
-    number: "01000000003",
-  },
-];
-
-let createdCustomers: Customer[];
-
-const mockCustomerReturns: {
-  customerId: number;
-  occurredAt: Date;
-  notes?: string;
-}[] = [];
-
+let seed: MockData;
 beforeAll(async () => {
+  await cleanDatabase();
+  seed = await populateDatabase();
   await login();
-
-  await prisma.customerReturnItem.deleteMany({});
-  await prisma.customerReturn.deleteMany({});
-  await prisma.exportItem.deleteMany({});
-  await prisma.export.deleteMany({});
-  await prisma.customer.deleteMany({});
-
-  createdCustomers = await prisma.customer.createManyAndReturn({
-    data: mockCustomers,
-  });
-
-  mockCustomerReturns.push(
-    {
-      customerId: createdCustomers[0].id,
-      occurredAt: new Date("2026-09-24T09:00:00Z"),
-      notes: "First return",
-    },
-    {
-      customerId: createdCustomers[0].id,
-      occurredAt: new Date("2026-09-24T10:00:00Z"),
-      notes: "Second return",
-    },
-    {
-      customerId: createdCustomers[1].id,
-      occurredAt: new Date("2026-09-25T09:00:00Z"),
-      notes: "Third return",
-    },
-    {
-      customerId: createdCustomers[2].id,
-      occurredAt: new Date("2026-09-27T09:00:00Z"),
-    },
-  );
 });
 
 describe("GET /customerReturns", () => {
-  let createdCustomerReturns: CustomerReturn[] = [];
-
-  beforeAll(async () => {
-    createdCustomerReturns =
-      await prisma.customerReturn.createManyAndReturn({
-        data: mockCustomerReturns,
-      });
-  });
-
   it("should return all customer returns", async () => {
     const res: PaginatedCustomerReturnsResponse =
       await auth().get("/customerReturns");
@@ -97,11 +37,11 @@ describe("GET /customerReturns", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: createdCustomerReturns,
+        data: seed.customerReturns,
         page: 1,
         size: 20,
-        totalPages: 1,
-        totalCount: createdCustomerReturns.length,
+        totalPages: Math.ceil(seed.customerReturns.length / 20),
+        totalCount: seed.customerReturns.length,
       }),
     );
   });
@@ -114,24 +54,22 @@ describe("GET /customerReturns", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [createdCustomerReturns[2], createdCustomerReturns[3]],
+        data: seed.customerReturns.slice(2, 4),
         page: 2,
         size: 2,
-        totalPages: 2,
-        totalCount: 4,
+        totalPages: Math.ceil(seed.customerReturns.length / 2),
+        totalCount: seed.customerReturns.length,
       }),
     );
   });
 
   it("should return all customer returns given customerId", async () => {
-    const customerId = createdCustomers[0].id;
-
+    const customerId = seed.customers[1].id;
     const res: PaginatedCustomerReturnsResponse = await auth().get(
       `/customerReturns?customerId=${customerId}`,
     );
-
-    const filtered = createdCustomerReturns.filter(
-      (customerReturn) => customerReturn.customerId === customerId,
+    const filtered = seed.customerReturns.filter(
+      (r) => r.customerId === customerId,
     );
 
     expect(res.status).toBe(200);
@@ -140,25 +78,22 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return all customer returns given customerName", async () => {
-    const customerName = "Customer One";
-
+    const customerName = seed.customers[0].name;
     const res: PaginatedCustomerReturnsResponse = await auth().get(
       `/customerReturns?customerName=${encodeURIComponent(customerName)}`,
     );
-
-    const customerIds = createdCustomers
-      .filter((customer) => customer.name === customerName)
-      .map((customer) => customer.id);
-
-    const filtered = createdCustomerReturns.filter((customerReturn) =>
-      customerIds.includes(customerReturn.customerId),
+    const customerIds = seed.customers
+      .filter((c) => c.name === customerName)
+      .map((c) => c.id);
+    const filtered = seed.customerReturns.filter((r) =>
+      customerIds.includes(r.customerId),
     );
 
     expect(res.status).toBe(200);
@@ -167,25 +102,22 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return all customer returns given customerNumber", async () => {
-    const customerNumber = "01000000002";
-
+    const customerNumber = seed.customers[1].number!;
     const res: PaginatedCustomerReturnsResponse = await auth().get(
       `/customerReturns?customerNumber=${customerNumber}`,
     );
-
-    const customerIds = createdCustomers
-      .filter((customer) => customer.number === customerNumber)
-      .map((customer) => customer.id);
-
-    const filtered = createdCustomerReturns.filter((customerReturn) =>
-      customerIds.includes(customerReturn.customerId),
+    const customerIds = seed.customers
+      .filter((c) => c.number === customerNumber)
+      .map((c) => c.id);
+    const filtered = seed.customerReturns.filter((r) =>
+      customerIds.includes(r.customerId),
     );
 
     expect(res.status).toBe(200);
@@ -194,22 +126,21 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return all customer returns given occurredFrom", async () => {
-    const occurredFrom = "2026-09-24T10:00:00.000Z";
-
-    const res: PaginatedCustomerReturnsResponse = await auth().get(
-      `/customerReturns?occurredFrom=${encodeURIComponent(occurredFrom)}`,
+    const occurredFrom = new Date(
+      seed.customerReturns[0].occurredAt.getTime() + 3600000,
     );
-
-    const filtered = createdCustomerReturns.filter(
-      (customerReturn) =>
-        customerReturn.occurredAt >= new Date(occurredFrom),
+    const res: PaginatedCustomerReturnsResponse = await auth().get(
+      `/customerReturns?occurredFrom=${encodeURIComponent(occurredFrom.toISOString())}`,
+    );
+    const filtered = seed.customerReturns.filter(
+      (r) => r.occurredAt >= occurredFrom,
     );
 
     expect(res.status).toBe(200);
@@ -218,22 +149,21 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return all customer returns given occurredTo", async () => {
-    const occurredTo = "2026-09-25T09:00:00.000Z";
-
-    const res: PaginatedCustomerReturnsResponse = await auth().get(
-      `/customerReturns?occurredTo=${encodeURIComponent(occurredTo)}`,
+    const occurredTo = new Date(
+      seed.customerReturns[2].occurredAt.getTime() - 3600000,
     );
-
-    const filtered = createdCustomerReturns.filter(
-      (customerReturn) =>
-        customerReturn.occurredAt <= new Date(occurredTo),
+    const res: PaginatedCustomerReturnsResponse = await auth().get(
+      `/customerReturns?occurredTo=${encodeURIComponent(occurredTo.toISOString())}`,
+    );
+    const filtered = seed.customerReturns.filter(
+      (r) => r.occurredAt <= occurredTo,
     );
 
     expect(res.status).toBe(200);
@@ -242,26 +172,24 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
   });
 
   it("should return all customer returns given occurredFrom and occurredTo", async () => {
-    const occurredFrom = "2026-09-24T10:00:00.000Z";
-    const occurredTo = "2026-09-25T09:00:00.000Z";
-
-    const res: PaginatedCustomerReturnsResponse = await auth().get(
-      `/customerReturns?occurredFrom=${encodeURIComponent(
-        occurredFrom,
-      )}&occurredTo=${encodeURIComponent(occurredTo)}`,
+    const occurredFrom = new Date(
+      seed.customerReturns[0].occurredAt.getTime() + 3600000,
     );
-
-    const filtered = createdCustomerReturns.filter(
-      (customerReturn) =>
-        customerReturn.occurredAt >= new Date(occurredFrom) &&
-        customerReturn.occurredAt <= new Date(occurredTo),
+    const occurredTo = new Date(
+      seed.customerReturns[2].occurredAt.getTime() - 3600000,
+    );
+    const res: PaginatedCustomerReturnsResponse = await auth().get(
+      `/customerReturns?occurredFrom=${encodeURIComponent(occurredFrom.toISOString())}&occurredTo=${encodeURIComponent(occurredTo.toISOString())}`,
+    );
+    const filtered = seed.customerReturns.filter(
+      (r) => r.occurredAt >= occurredFrom && r.occurredAt <= occurredTo,
     );
 
     expect(res.status).toBe(200);
@@ -270,7 +198,7 @@ describe("GET /customerReturns", () => {
         data: filtered,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(filtered.length / 20),
         totalCount: filtered.length,
       }),
     );
@@ -280,8 +208,7 @@ describe("GET /customerReturns", () => {
     const res: PaginatedCustomerReturnsResponse = await auth().get(
       "/customerReturns?sortBy=occurredAt&order=desc",
     );
-
-    const sorted = createdCustomerReturns.toSorted(
+    const sorted = seed.customerReturns.toSorted(
       (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
     );
 
@@ -291,7 +218,7 @@ describe("GET /customerReturns", () => {
         data: sorted,
         page: 1,
         size: 20,
-        totalPages: 1,
+        totalPages: Math.ceil(sorted.length / 20),
         totalCount: sorted.length,
       }),
     );
@@ -299,33 +226,18 @@ describe("GET /customerReturns", () => {
 });
 
 describe("GET /customerReturns/:id", () => {
-  let createdCustomerReturn: CustomerReturn;
-
-  beforeAll(async () => {
-    await prisma.customerReturn.deleteMany({});
-
-    createdCustomerReturn = await prisma.customerReturn.create({
-      data: mockCustomerReturns[0],
-    });
-  });
-
   it("should return customer return given valid id", async () => {
-    const id = createdCustomerReturn.id;
-
+    const customerReturn = seed.customerReturns[0];
     const res: CustomerReturnResponse = await auth().get(
-      `/customerReturns/${id}`,
+      `/customerReturns/${customerReturn.id}`,
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      data: json(createdCustomerReturn),
-    });
+    expect(res.body).toEqual({ data: json(customerReturn) });
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await auth().get(
-      "/customerReturns/badId",
-    );
+    const res: ErrorResponse = await auth().get("/customerReturns/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -339,9 +251,7 @@ describe("GET /customerReturns/:id", () => {
   });
 
   it("should fail if customer return isn't found", async () => {
-    const res: ErrorResponse = await auth().get(
-      "/customerReturns/999999999",
-    );
+    const res: ErrorResponse = await auth().get("/customerReturns/999999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("CustomerReturn not found");
@@ -349,30 +259,24 @@ describe("GET /customerReturns/:id", () => {
 });
 
 describe("POST /customerReturns", () => {
-  beforeAll(async () => {
-    await prisma.customerReturn.deleteMany({});
-  });
-
   it("should create customer return successfully given valid data", async () => {
+    const payload = {
+      customerId: seed.customers[0].id,
+      occurredAt: "2026-10-10T09:00:00.000Z",
+      notes: "New return",
+    };
     const res: CustomerReturnResponse = await auth()
       .post("/customerReturns")
-      .send(mockCustomerReturns[0]);
+      .send(payload);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject(
-      json({
-        data: mockCustomerReturns[0],
-      }),
-    );
+    expect(res.body).toMatchObject({ data: payload });
   });
 
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .post("/customerReturns")
-      .send({
-        customerId: -1,
-        occurredAt: "badDate",
-      });
+      .send({ customerId: -1, occurredAt: "badDate" });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -393,45 +297,24 @@ describe("POST /customerReturns", () => {
   it("should fail if customer isn't found", async () => {
     const res: ErrorResponse = await auth()
       .post("/customerReturns")
-      .send({
-        ...mockCustomerReturns[0],
-        customerId: 99999999,
-      });
+      .send({ customerId: 99999999, occurredAt: "2026-10-10T09:00:00.000Z" });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe(
-      "No customer exists with that ID",
-    );
+    expect(res.body.message).toBe("No customer exists with that ID");
   });
 });
 
 describe("PATCH /customerReturns/:id", () => {
-  let createdCustomerReturn: CustomerReturn;
-
-  beforeAll(async () => {
-    await prisma.customerReturn.deleteMany({});
-
-    createdCustomerReturn = await prisma.customerReturn.create({
-      data: mockCustomerReturns[0],
-    });
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const id = createdCustomerReturn.id;
-
+    const customerReturn = seed.customerReturns[0];
     const res: CustomerReturnResponse = await auth()
-      .patch(`/customerReturns/${id}`)
-      .send({
-        notes: "Updated notes",
-      });
+      .patch(`/customerReturns/${customerReturn.id}`)
+      .send({ notes: "Updated notes" });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({
-          ...createdCustomerReturn,
-          notes: "Updated notes",
-        }),
+        ...json({ ...customerReturn, notes: "Updated notes" }),
         updatedAt: expect.any(String),
       },
     });
@@ -464,10 +347,8 @@ describe("PATCH /customerReturns/:id", () => {
 
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/customerReturns/${createdCustomerReturn.id}`)
-      .send({
-        customerId: -1,
-      });
+      .patch(`/customerReturns/${seed.customerReturns[0].id}`)
+      .send({ customerId: -1 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -482,53 +363,44 @@ describe("PATCH /customerReturns/:id", () => {
 
   it("should fail if customer isn't found", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/customerReturns/${createdCustomerReturn.id}`)
-      .send({
-        customerId: 99999999,
-      });
+      .patch(`/customerReturns/${seed.customerReturns[0].id}`)
+      .send({ customerId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe(
-      "No customer exists with that ID",
-    );
+    expect(res.body.message).toBe("No customer exists with that ID");
   });
 });
 
 describe("DELETE /customerReturns/:id", () => {
+  // every seeded customer return has an item, so delete one with no children
   let createdCustomerReturn: CustomerReturn;
 
   beforeAll(async () => {
-    await prisma.customerReturn.deleteMany({});
-
     createdCustomerReturn = await prisma.customerReturn.create({
-      data: mockCustomerReturns[0],
+      data: {
+        customerId: seed.customers[0].id,
+        productionDayId: seed.productionDays[1].id,
+      },
     });
   });
 
   it("should delete successfully given valid id", async () => {
     const id = createdCustomerReturn.id;
-
     const res: CustomerReturnResponse = await auth().delete(
       `/customerReturns/${id}`,
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({
-      data: json(createdCustomerReturn),
-    });
+    expect(res.body).toEqual({ data: json(createdCustomerReturn) });
 
-    const res2: ErrorResponse = await auth().get(
-      `/customerReturns/${id}`,
-    );
+    const res2: ErrorResponse = await auth().get(`/customerReturns/${id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("CustomerReturn not found");
   });
 
   it("should fail given invalid id", async () => {
-    const res: ErrorResponse = await auth().delete(
-      "/customerReturns/badId",
-    );
+    const res: ErrorResponse = await auth().delete("/customerReturns/badId");
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -542,9 +414,7 @@ describe("DELETE /customerReturns/:id", () => {
   });
 
   it("should fail if customer return isn't found", async () => {
-    const res: ErrorResponse = await auth().delete(
-      "/customerReturns/99999999",
-    );
+    const res: ErrorResponse = await auth().delete("/customerReturns/99999999");
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("CustomerReturn not found");
@@ -552,10 +422,6 @@ describe("DELETE /customerReturns/:id", () => {
 });
 
 afterAll(async () => {
-  await prisma.customerReturnItem.deleteMany({});
-  await prisma.customerReturn.deleteMany({});
-  await prisma.exportItem.deleteMany({});
-  await prisma.export.deleteMany({});
-  await prisma.customer.deleteMany({});
+  await cleanDatabase();
   await prisma.$disconnect();
 });
