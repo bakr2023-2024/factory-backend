@@ -27,6 +27,10 @@ import stockMovementRouter from "./modules/stockMovement/stockMovement.route";
 import reportRouter from "./modules/report/report.route";
 import laborerRouter from "./modules/laborer/laborer.route";
 import rateRouter from "./modules/rate/rate.route";
+import attendanceRouter from "./modules/attendance/attendance.route";
+import loanRouter from "./modules/loan/loan.route";
+import loanPaymentRouter from "./modules/loanPayment/loanPayment.route";
+import paymentRouter from "./modules/payment/payment.route";
 import { ErrorDetail } from "./utils/types/types";
 import { authentication } from "./middleware/auth.middleware";
 const app = express();
@@ -54,6 +58,10 @@ app.use("/stockMovements", authentication, stockMovementRouter);
 app.use("/reports", authentication, reportRouter);
 app.use("/laborers", authentication, laborerRouter);
 app.use("/rates", authentication, rateRouter);
+app.use("/attendances", authentication, attendanceRouter);
+app.use("/loans", authentication, loanRouter);
+app.use("/loanPayments", authentication, loanPaymentRouter);
+app.use("/payments", authentication, paymentRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
