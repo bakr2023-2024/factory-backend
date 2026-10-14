@@ -4,10 +4,12 @@ import prisma from "../src/db/prisma";
 import { signToken } from "../src/utils/security/token.security";
 import {
   ItemType,
+  PaymentType,
   Role,
   StockMovementType,
 } from "../src/db/generated/prisma/enums";
 import {
+  Attendance,
   Consumption,
   Customer,
   CustomerReturn,
@@ -18,10 +20,14 @@ import {
   ImportItem,
   Item,
   Laborer,
+  Loan,
+  LoanPayment,
+  Payment,
   Prisma,
   ProductionBatch,
   ProductionDay,
   ProductionEntry,
+  Rate,
   Season,
   StockMovement,
   Supplier,
@@ -76,6 +82,9 @@ const DAY = 24 * HOUR;
 const at = (n: number) => new Date(Date.UTC(2026, 8, 24, 12) + n * DAY);
 // same date plus idx minutes: keeps stock movements' timestamps unique
 const shift = (d: Date, idx: number) => new Date(d.getTime() + idx * 60_000);
+// a given hour (UTC) on a production day
+const onDay = (d: ProductionDay, hour: number) =>
+  new Date(d.productionDate.getTime() + hour * HOUR);
 const byId = <T extends { id: number }>(rows: T[], id: number) =>
   rows.find((r) => r.id === id)!;
 
@@ -99,6 +108,18 @@ const mockLaborers = [
   { name: "laborer 1", number: "07775000" },
   { name: "laborer 2", number: "08886000" },
   { name: "laborer 3", number: "09997000" },
+];
+// Laborer i has rate i, in season i, and works on production day i.
+const mockRates = [
+  { dailySalary: 600, paymentType: PaymentType.WEEKLY },
+  { dailySalary: 1000, paymentType: PaymentType.MONTHLY },
+  { dailySalary: 2000, paymentType: PaymentType.SEASON_END },
+];
+// Factor and hours per laborer on their production day.
+const mockAttendances = [
+  { factor: 1, leftHour: 17 },
+  { factor: 0.5, leftHour: 12 },
+  { factor: 1, leftHour: 17 },
 ];
 // Variants 0 and 2 share unitWeight 5 (different items), and item 0 has two
 // variants, so itemName + unitWeight filters can be told apart from either alone.
@@ -133,6 +154,7 @@ const mockProductionDays = [
     startedAt: new Date("2026-10-08T08:00:00Z"),
   },
 ];
+
 export type MockData = {
   items: Item[];
   seasons: Season[];
@@ -154,7 +176,13 @@ export type MockData = {
   consumptions: Consumption[];
   stockMovements: StockMovement[];
   laborers: Laborer[];
+  rates: Rate[];
+  attendances: Attendance[];
+  payments: Payment[];
+  loans: Loan[];
+  loanPayments: LoanPayment[];
 };
+
 export const populateDatabase = async (): Promise<MockData> => {
   const stockMovements: StockMovement[] = [];
 
@@ -170,6 +198,9 @@ export const populateDatabase = async (): Promise<MockData> => {
   });
   const suppliers: Supplier[] = await prisma.supplier.createManyAndReturn({
     data: mockSuppliers,
+  });
+  const laborers: Laborer[] = await prisma.laborer.createManyAndReturn({
+    data: mockLaborers,
   });
   const variants: Variant[] = await prisma.variant.createManyAndReturn({
     data: mockVariants.map((v) => ({
@@ -397,9 +428,98 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
-  const laborers: Laborer[] = await prisma.laborer.createManyAndReturn({
-    data: mockLaborers,
+
+  // ---------- laborers ----------
+  const rates: Rate[] = await prisma.rate.createManyAndReturn({
+    data: laborers.map((l, idx) => ({
+      laborerId: l.id,
+      seasonId: seasons[idx].id,
+      dailySalary: mockRates[idx].dailySalary,
+      paymentType: mockRates[idx].paymentType,
+      from: seasons[idx].startDate,
+      to: null,
+    })),
   });
+  const attendances: Attendance[] = await prisma.attendance.createManyAndReturn(
+    {
+      data: laborers.map((l, idx) => ({
+        laborerId: l.id,
+        productionDayId: productionDays[idx].id,
+        cameAt: onDay(productionDays[idx], 8),
+        leftAt: onDay(productionDays[idx], mockAttendances[idx].leftHour),
+        factor: mockAttendances[idx].factor,
+      })),
+    },
+  );
+  // Gross = sum of factors x dailySalary. Net = gross - loans + loanPayments.
+  // Payment 0: gross 1 x 600 = 600, loans 300, loanPayments 100 => net 400.
+  // Payment 1: gross 1 x 2000 = 2000, loans 1000, loanPayments 0 => net 1000.
+  // Laborer 1 has no payment yet (their 0.5 x 1000 is still pending).
+  const payments: Payment[] = await prisma.payment.createManyAndReturn({
+    data: [
+      {
+        rateId: rates[0].id,
+        gross: 600,
+        loans: 300,
+        loanPayments: 100,
+        net: 400,
+        paidAt: onDay(productionDays[0], 18),
+      },
+      {
+        rateId: rates[2].id,
+        gross: 2000,
+        loans: 1000,
+        loanPayments: 0,
+        net: 1000,
+        paidAt: onDay(productionDays[2], 18),
+      },
+    ],
+  });
+  // loan 0 and loan 2 were deducted in payments 0 and 1; loan 1 is still open
+  const loans: Loan[] = await prisma.loan.createManyAndReturn({
+    data: [
+      {
+        laborerId: laborers[0].id,
+        seasonId: seasons[0].id,
+        loanAmount: 300,
+        loanedAt: onDay(productionDays[0], 7),
+        paymentId: payments[0].id,
+      },
+      {
+        laborerId: laborers[1].id,
+        seasonId: seasons[1].id,
+        loanAmount: 500,
+        loanedAt: onDay(productionDays[1], 7),
+        paymentId: null,
+      },
+      {
+        laborerId: laborers[2].id,
+        seasonId: seasons[2].id,
+        loanAmount: 1000,
+        loanedAt: onDay(productionDays[2], 7),
+        paymentId: payments[1].id,
+      },
+    ],
+  });
+  // loanPayment 0 was deducted in payment 0; loanPayment 1 is free for POST tests
+  const loanPayments: LoanPayment[] =
+    await prisma.loanPayment.createManyAndReturn({
+      data: [
+        {
+          loanId: loans[0].id,
+          paymentId: payments[0].id,
+          amount: 100,
+          repaidAt: onDay(productionDays[0], 17),
+        },
+        {
+          loanId: loans[1].id,
+          paymentId: null,
+          amount: 50,
+          repaidAt: onDay(productionDays[1], 16),
+        },
+      ],
+    });
+
   return {
     items,
     seasons,
@@ -421,5 +541,10 @@ export const populateDatabase = async (): Promise<MockData> => {
     consumptions,
     stockMovements,
     laborers,
+    rates,
+    attendances,
+    payments,
+    loans,
+    loanPayments,
   };
 };

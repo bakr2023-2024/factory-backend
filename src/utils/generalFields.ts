@@ -73,4 +73,10 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   SupplierReturn: Object.values(Prisma.SupplierReturnScalarFieldEnum),
   SupplierReturnItem: Object.values(Prisma.SupplierReturnItemScalarFieldEnum),
   CustomerReturnItem: Object.values(Prisma.CustomerReturnItemScalarFieldEnum),
+  Laborer: Object.values(Prisma.LaborerScalarFieldEnum),
+  Rate: Object.values(Prisma.RateScalarFieldEnum),
+  Attendance: Object.values(Prisma.AttendanceScalarFieldEnum),
+  Loan: Object.values(Prisma.LoanScalarFieldEnum),
+  LoanPayment: Object.values(Prisma.LoanPaymentScalarFieldEnum),
+  Payment: Object.values(Prisma.PaymentScalarFieldEnum),
 };

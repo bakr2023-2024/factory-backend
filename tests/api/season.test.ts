@@ -193,12 +193,14 @@ describe("POST /seasons", () => {
     const res: SeasonResponse = await auth().post("/seasons").send(body);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({
-      data: {
-        name: body.name,
-        startDate: expect.any(String),
-      },
-    });
+    expect(res.body).toMatchObject(
+      json({
+        data: {
+          name: body.name,
+          startDate: new Date(body.startDate),
+        },
+      }),
+    );
   });
 
   it("should fail given invalid name", async () => {
