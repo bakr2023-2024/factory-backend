@@ -17,6 +17,7 @@ import {
   Import,
   ImportItem,
   Item,
+  Laborer,
   Prisma,
   ProductionBatch,
   ProductionDay,
@@ -94,6 +95,11 @@ const mockSuppliers = [
   { name: "cm punk", number: "08886000" },
   { name: "brock lesner", number: "09997000" },
 ];
+const mockLaborers = [
+  { name: "laborer 1", number: "07775000" },
+  { name: "laborer 2", number: "08886000" },
+  { name: "laborer 3", number: "09997000" },
+];
 // Variants 0 and 2 share unitWeight 5 (different items), and item 0 has two
 // variants, so itemName + unitWeight filters can be told apart from either alone.
 // Variants 0..2 are used by the main rows, variant 3 only by the "free" rows.
@@ -147,6 +153,7 @@ export type MockData = {
   supplierReturnItems: SupplierReturnItem[];
   consumptions: Consumption[];
   stockMovements: StockMovement[];
+  laborers: Laborer[];
 };
 export const populateDatabase = async (): Promise<MockData> => {
   const stockMovements: StockMovement[] = [];
@@ -390,6 +397,9 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+  const laborers: Laborer[] = await prisma.laborer.createManyAndReturn({
+    data: mockLaborers,
+  });
   return {
     items,
     seasons,
@@ -410,5 +420,6 @@ export const populateDatabase = async (): Promise<MockData> => {
     supplierReturnItems,
     consumptions,
     stockMovements,
+    laborers,
   };
 };
