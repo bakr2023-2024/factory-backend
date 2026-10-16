@@ -3,7 +3,10 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { Consumption } from "../../src/db/generated/prisma/client";
+import {
+  Consumption,
+  StockMovement,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -21,7 +24,7 @@ import prisma from "../../src/db/prisma";
 
 type ConsumptionResponse = DataResponse<Consumption>;
 type PaginatedConsumptionsResponse = PaginationResponse<Consumption[]>;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -326,7 +329,6 @@ describe("GET /consumptions/:id", () => {
 
 describe("POST /consumptions", () => {
   it("should create consumption successfully given valid data", async () => {
-    // (day 0, variant 1) is not used by any seeded consumption
     const payload = {
       productionDayId: seed.productionDays[0].id,
       variantId: seed.variants[1].id,
@@ -340,6 +342,15 @@ describe("POST /consumptions", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CONSUMPTION&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "CONSUMPTION",
+      quantityChanged: -payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -405,6 +416,15 @@ describe("PATCH /consumptions/:id", () => {
         updatedAt: expect.any(String),
       },
     });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CONSUMPTION&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "CONSUMPTION",
+      quantityChanged: -50,
+    });
   });
 
   it("should fail given invalid id", async () => {
@@ -462,7 +482,6 @@ describe("PATCH /consumptions/:id", () => {
 
 describe("DELETE /consumptions/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // consumptions[1]: the PATCH tests above only touched consumptions[0]
     const consumption = seed.consumptions[1];
     const res: ConsumptionResponse = await auth().delete(
       `/consumptions/${consumption.id}`,
@@ -477,6 +496,11 @@ describe("DELETE /consumptions/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Consumption not found");
+    const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CONSUMPTION&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0)
   });
 
   it("should fail given invalid id", async () => {

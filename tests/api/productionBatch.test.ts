@@ -7,6 +7,7 @@ import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
 import {
   ProductionBatch,
   ProductionEntry,
+  StockMovement,
 } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
@@ -25,7 +26,7 @@ import prisma from "../../src/db/prisma";
 
 type ProductionBatchResponse = DataResponse<ProductionBatch>;
 type PaginatedProductionBatchesResponse = PaginationResponse<ProductionBatch[]>;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 
 beforeAll(async () => {
@@ -353,18 +354,9 @@ describe("GET /productionBatches/:id", () => {
 });
 
 describe("POST /productionBatches", () => {
-  let createdProductionEntry: ProductionEntry;
-  beforeAll(async () => {
-    createdProductionEntry = await prisma.productionEntry.create({
-      data: {
-        productionDayId: seed.productionDays[0].id,
-        variantId: seed.variants[2].id,
-      },
-    });
-  });
   it("should create productionBatch successfully given valid data", async () => {
     const payload = {
-      productionEntryId: createdProductionEntry.id,
+      productionEntryId: seed.productionEntries[2].id,
       quantity: 40,
       occurredAt: "2026-09-24T12:00:00.000Z",
     };
@@ -374,6 +366,15 @@ describe("POST /productionBatches", () => {
       .send(payload);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(json({ data: payload }));
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=PRODUCTION_BATCH&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "PRODUCTION_BATCH",
+      quantityChanged: payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -430,6 +431,15 @@ describe("PATCH /productionBatches/:id", () => {
         ...json({ ...productionBatch, quantity: 50 }),
         updatedAt: expect.any(String),
       },
+    });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=PRODUCTION_BATCH&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "PRODUCTION_BATCH",
+      quantityChanged: 50,
     });
   });
 
@@ -505,6 +515,11 @@ describe("DELETE /productionBatches/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("ProductionBatch not found");
+    const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=PRODUCTION_BATCH&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {

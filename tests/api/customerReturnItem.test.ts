@@ -3,7 +3,7 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { CustomerReturnItem } from "../../src/db/generated/prisma/client";
+import { CustomerReturnItem, StockMovement } from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -23,7 +23,7 @@ type CustomerReturnItemResponse = DataResponse<CustomerReturnItem>;
 type PaginatedCustomerReturnItemsResponse = PaginationResponse<
   CustomerReturnItem[]
 >;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -261,7 +261,6 @@ describe("GET /customerReturnItems", () => {
     );
   });
 
-  // seeded unit prices are 1.5, 3 and 4.5
   it("should return all customer return items given minPrice", async () => {
     const minPrice = 3;
     const res: PaginatedCustomerReturnItemsResponse = await auth().get(
@@ -366,7 +365,6 @@ describe("GET /customerReturnItems/:id", () => {
 
 describe("POST /customerReturnItems", () => {
   it("should create customer return item successfully given valid data", async () => {
-    // exportItems[3] is not returned by any seeded customer return item
     const payload = {
       customerReturnId: seed.customerReturns[0].id,
       exportItemId: seed.exportItems[3].id,
@@ -380,6 +378,15 @@ describe("POST /customerReturnItems", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
+        const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "CUSTOMER_RETURN_ITEM",
+      quantityChanged: payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -445,6 +452,15 @@ describe("PATCH /customerReturnItems/:id", () => {
         updatedAt: expect.any(String),
       },
     });
+            const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "CUSTOMER_RETURN_ITEM",
+      quantityChanged: 2,
+    });
   });
 
   it("should fail given invalid id", async () => {
@@ -502,7 +518,6 @@ describe("PATCH /customerReturnItems/:id", () => {
 
 describe("DELETE /customerReturnItems/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // customerReturnItems[1]: the PATCH tests above only touched customerReturnItems[0]
     const item = seed.customerReturnItems[1];
     const res: CustomerReturnItemResponse = await auth().delete(
       `/customerReturnItems/${item.id}`,
@@ -517,6 +532,11 @@ describe("DELETE /customerReturnItems/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("CustomerReturnItem not found");
+            const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0)
   });
 
   it("should fail given invalid id", async () => {

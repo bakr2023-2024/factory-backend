@@ -2,7 +2,10 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { ExportItem } from "../../src/db/generated/prisma/client";
+import {
+  ExportItem,
+  StockMovement,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -20,7 +23,7 @@ import prisma from "../../src/db/prisma";
 
 type ExportItemResponse = DataResponse<ExportItem>;
 type PaginatedExportItemsResponse = PaginationResponse<ExportItem[]>;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -140,20 +143,28 @@ describe("GET /exportItems/:id", () => {
 });
 
 describe("POST /exportItems", () => {
-  it("should create exportItem successfully given variantId and exportId and quantity and unitPrice optionally", async () => {
-    // (export 2, variant 3) is not used by any seeded export item
+  it("should create exportItem given valid data", async () => {
     const payload = {
       exportId: seed.exports[2].id,
-      variantId: seed.variants[3].id,
+      variantId: seed.variants[1].id,
       quantity: 7,
       unitPrice: 5.5,
     };
     const res: ExportItemResponse = await auth()
       .post("/exportItems")
       .send(payload);
-
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
+
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "EXPORT_ITEM",
+      quantityChanged: -payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -217,15 +228,24 @@ describe("PATCH /exportItems/:id", () => {
     const exportItem = seed.exportItems[0];
     const res: ExportItemResponse = await auth()
       .patch(`/exportItems/${exportItem.id}`)
-      .send({ unitPrice: 99.5 });
+      .send({ quantity: 67 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({ ...exportItem, unitPrice: 99.5 }),
+        ...json({ ...exportItem, quantity: 67 }),
         updatedAt: expect.any(String),
       },
     });
+                const res2: PaginatedStockMovementResponse = await auth().get(
+                  `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
+                );
+                expect(res2.status).toBe(200);
+                expect(res2.body.data[0]).toMatchObject({
+                  typeRef: res.body.data.id,
+                  type: "EXPORT_ITEM",
+                  quantityChanged: -67,
+                });
   });
 
   it("should fail given invalid id", async () => {
@@ -305,7 +325,6 @@ describe("PATCH /exportItems/:id", () => {
 
 describe("DELETE /exportItems/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // exportItems[3] is not returned by any customer return item, so it has no children
     const exportItem = seed.exportItems[3];
     const res: ExportItemResponse = await auth().delete(
       `/exportItems/${exportItem.id}`,
@@ -320,6 +339,11 @@ describe("DELETE /exportItems/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("ExportItem not found");
+    const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {

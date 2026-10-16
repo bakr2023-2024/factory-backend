@@ -2,7 +2,10 @@ import { config } from "dotenv";
 import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { ImportItem } from "../../src/db/generated/prisma/client";
+import {
+  ImportItem,
+  StockMovement,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -20,7 +23,7 @@ import prisma from "../../src/db/prisma";
 
 type ImportItemResponse = DataResponse<ImportItem>;
 type PaginatedImportItemsResponse = PaginationResponse<ImportItem[]>;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -141,10 +144,9 @@ describe("GET /importItems/:id", () => {
 
 describe("POST /importItems", () => {
   it("should create importItem successfully given variantId and importId and quantity and unitPrice optionally", async () => {
-    // (import 2, variant 3) is not used by any seeded import item
     const payload = {
       importId: seed.imports[2].id,
-      variantId: seed.variants[3].id,
+      variantId: seed.variants[1].id,
       quantity: 7,
       unitPrice: 5.5,
     };
@@ -154,6 +156,15 @@ describe("POST /importItems", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
+                const res2: PaginatedStockMovementResponse = await auth().get(
+                  `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
+                );
+                expect(res2.status).toBe(200);
+                expect(res2.body.data[0]).toMatchObject({
+                  typeRef: res.body.data.id,
+                  type: "IMPORT_ITEM",
+                  quantityChanged: payload.quantity,
+                });
   });
 
   it("should fail given invalid data", async () => {
@@ -217,15 +228,24 @@ describe("PATCH /importItems/:id", () => {
     const importItem = seed.importItems[0];
     const res: ImportItemResponse = await auth()
       .patch(`/importItems/${importItem.id}`)
-      .send({ unitPrice: 99.5 });
+      .send({ quantity: 67 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({ ...importItem, unitPrice: 99.5 }),
+        ...json({ ...importItem, quantity: 67 }),
         updatedAt: expect.any(String),
       },
     });
+                const res2: PaginatedStockMovementResponse = await auth().get(
+                  `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
+                );
+                expect(res2.status).toBe(200);
+                expect(res2.body.data[0]).toMatchObject({
+                  typeRef: res.body.data.id,
+                  type: "IMPORT_ITEM",
+                  quantityChanged: 67,
+                });
   });
 
   it("should fail given invalid id", async () => {
@@ -305,7 +325,6 @@ describe("PATCH /importItems/:id", () => {
 
 describe("DELETE /importItems/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // importItems[3] is not returned by any supplier return item, so it has no children
     const importItem = seed.importItems[3];
     const res: ImportItemResponse = await auth().delete(
       `/importItems/${importItem.id}`,
@@ -320,6 +339,11 @@ describe("DELETE /importItems/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("ImportItem not found");
+    const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {

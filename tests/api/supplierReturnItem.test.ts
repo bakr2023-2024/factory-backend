@@ -3,7 +3,10 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { SupplierReturnItem } from "../../src/db/generated/prisma/client";
+import {
+  StockMovement,
+  SupplierReturnItem,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -23,7 +26,7 @@ type SupplierReturnItemResponse = DataResponse<SupplierReturnItem>;
 type PaginatedSupplierReturnItemsResponse = PaginationResponse<
   SupplierReturnItem[]
 >;
-
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 
 beforeAll(async () => {
@@ -415,6 +418,15 @@ describe("POST /supplierReturnItems", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=SUPPLIER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "SUPPLIER_RETURN_ITEM",
+      quantityChanged: -payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -481,6 +493,15 @@ describe("PATCH /supplierReturnItems/:id", () => {
         updatedAt: expect.any(String),
       },
     });
+        const res2: PaginatedStockMovementResponse = await auth().get(
+          `/stockMovements?type=SUPPLIER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+        );
+        expect(res2.status).toBe(200);
+        expect(res2.body.data[0]).toMatchObject({
+          typeRef: res.body.data.id,
+          type: "SUPPLIER_RETURN_ITEM",
+          quantityChanged: -50,
+        });
   });
 
   it("should fail given invalid id", async () => {
@@ -560,6 +581,11 @@ describe("DELETE /supplierReturnItems/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("SupplierReturnItem not found");
+    const res3: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=SUPPLIER_RETURN_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res3.status).toBe(200);
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {
