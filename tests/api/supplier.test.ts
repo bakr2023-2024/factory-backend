@@ -263,15 +263,10 @@ describe("PATCH /suppliers/:id", () => {
 });
 
 describe("DELETE /suppliers/:id", () => {
-  let createdSupplier:Supplier;
-  beforeAll(async()=>{
-    createdSupplier = await prisma.supplier.create({data:newSupplier})
-  })
   it("should delete successfully given valid id", async () => {
-    const id = createdSupplier.id
-    const res: SupplierResponse = await auth().delete(
-      `/suppliers/${id}`,
-    );
+    const createdSupplier = seed.suppliers[3];
+    const id = createdSupplier.id;
+    const res: SupplierResponse = await auth().delete(`/suppliers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdSupplier) });

@@ -338,19 +338,8 @@ describe("PATCH /exports/:id", () => {
 });
 
 describe("DELETE /exports/:id", () => {
-  // every seeded export has export items, so delete one with no children
-  let createdExport: Export;
-
-  beforeAll(async () => {
-    createdExport = await prisma.export.create({
-      data: {
-        customerId: seed.customers[0].id,
-        productionDayId: seed.productionDays[0].id,
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const createdExport = seed.exports[3];
     const id = createdExport.id;
     const res: ExportResponse = await auth().delete(`/exports/${id}`);
 

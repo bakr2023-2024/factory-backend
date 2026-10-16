@@ -263,15 +263,10 @@ describe("PATCH /laborers/:id", () => {
 });
 
 describe("DELETE /laborers/:id", () => {
-  let createdLaborer:Laborer;
-  beforeAll(async()=>{
-    createdLaborer = await prisma.laborer.create({data:newLaborer})
-  })
   it("should delete successfully given valid id", async () => {
-    const id = createdLaborer.id
-    const res: LaborerResponse = await auth().delete(
-      `/laborers/${id}`,
-    );
+    const createdLaborer = seed.laborers[3];
+    const id = createdLaborer.id;
+    const res: LaborerResponse = await auth().delete(`/laborers/${id}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(createdLaborer) });

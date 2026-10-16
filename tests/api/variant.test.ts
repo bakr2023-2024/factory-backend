@@ -172,7 +172,7 @@ describe("POST /variants", () => {
       },
       {
         key: "body",
-        message: "unit weight must be above 0",
+        message: "value can only be a positive number",
         path: ["unitWeight"],
       },
     ]);
@@ -254,7 +254,7 @@ describe("PATCH /variants/:id", () => {
       },
       {
         key: "body",
-        message: "unit weight must be above 0",
+        message: "value can only be a positive number",
         path: ["unitWeight"],
       },
     ]);
@@ -274,26 +274,16 @@ describe("PATCH /variants/:id", () => {
 
 describe("DELETE /variants/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // Create an isolated variant so seeded variants and their dependent
-    // production, import, and export records remain untouched.
-    const variant = await prisma.variant.create({
-      data: {
-        itemId: seed.items[2].id,
-        unitWeight: 99,
-      },
-    });
-
+    const variant = seed.variants[4];
     const res: VariantResponse = await auth().delete(
       `/variants/${variant.id}`,
     );
-
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ data: json(variant) });
-
+    
     const res2: ErrorResponse = await auth().get(
       `/variants/${variant.id}`,
     );
-
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Variant not found");
   });

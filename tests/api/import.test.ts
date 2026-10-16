@@ -339,19 +339,8 @@ describe("PATCH /imports/:id", () => {
 });
 
 describe("DELETE /imports/:id", () => {
-  // every seeded import has import items, so delete one with no children
-  let createdImport: Import;
-
-  beforeAll(async () => {
-    createdImport = await prisma.import.create({
-      data: {
-        supplierId: seed.suppliers[0].id,
-        productionDayId: seed.productionDays[0].id,
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const createdImport = seed.imports[3];
     const id = createdImport.id;
     const res: ImportResponse = await auth().delete(`/imports/${id}`);
 

@@ -489,16 +489,8 @@ describe("PATCH /supplierReturns/:id", () => {
 });
 
 describe("DELETE /supplierReturns/:id", () => {
-  let createdSupplierReturn: SupplierReturn;
-  beforeAll(async () => {
-    createdSupplierReturn = await prisma.supplierReturn.create({
-      data: {
-        supplierId: seed.suppliers[0].id,
-        productionDayId: seed.productionDays[1].id,
-      },
-    });
-  });
   it("should delete successfully given valid id", async () => {
+    const createdSupplierReturn = seed.supplierReturns[3];
     const res: SupplierReturnResponse = await auth().delete(
       `/supplierReturns/${createdSupplierReturn.id}`,
     );

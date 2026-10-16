@@ -83,7 +83,27 @@ describe("GET /weeks", () => {
       }),
     );
   });
+  it("should return all weeks between startDate and endDate", async () => {
+    const start = seed.weeks[0].startDate;
+    const end = seed.weeks[2].endDate!;
+    const res: PaginatedWeeksResponse = await auth().get(
+      `/weeks?startDate=${encodeURIComponent(start.toISOString().slice(0, 10))}&endDate=${encodeURIComponent(end.toISOString().slice(0, 10))}`,
+    );
+    const filtered = seed.weeks.filter(
+      (w) => w.startDate >= start && w.endDate! <= end,
+    );
 
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all weeks sorted according to sortBy and order", async () => {
     const res: PaginatedWeeksResponse = await auth().get(
       "/weeks?sortBy=startDate&order=desc",
@@ -101,31 +121,6 @@ describe("GET /weeks", () => {
         size: 20,
         totalPages: Math.ceil(sorted.length / 20),
         totalCount: sorted.length,
-      }),
-    );
-  });
-
-  it("should return all weeks that started between startedFrom and startedTo", async () => {
-    const start = "2026-09-23";
-    const end = "2026-09-28";
-
-    const res: PaginatedWeeksResponse = await auth().get(
-      `/weeks?startedFrom=${start}&startedTo=${end}`,
-    );
-
-    const filtered = seed.weeks.filter(
-      ({ startDate }) =>
-        startDate.toISOString() >= start && startDate.toISOString() < end,
-    );
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: filtered,
-        page: 1,
-        size: 20,
-        totalPages: Math.ceil(filtered.length / 20),
-        totalCount: filtered.length,
       }),
     );
   });
@@ -289,14 +284,7 @@ describe("PATCH /weeks/:id", () => {
 
 describe("DELETE /weeks/:id", () => {
   it("should delete successfully given valid id", async () => {
-    // Use an isolated week so the seeded production days remain untouched.
-    const week = await prisma.week.create({
-      data: {
-        seasonId: seed.seasons[2].id,
-        startDate: new Date("2026-10-15T00:00:00Z"),
-      },
-    });
-
+    const week = seed.weeks[3];
     const res: WeekResponse = await auth().delete(`/weeks/${week.id}`);
 
     expect(res.status).toBe(200);

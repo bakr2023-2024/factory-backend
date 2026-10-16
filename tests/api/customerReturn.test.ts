@@ -451,27 +451,18 @@ describe("PATCH /customerReturns/:id", () => {
 });
 
 describe("DELETE /customerReturns/:id", () => {
-  let createdCustomerReturn: CustomerReturn;
-
-  beforeAll(async () => {
-    createdCustomerReturn = await prisma.customerReturn.create({
-      data: {
-        customerId: seed.customers[0].id,
-        productionDayId: seed.productionDays[1].id,
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
-    const id = createdCustomerReturn.id;
+    const customerReturn = seed.customerReturns[3];
     const res: CustomerReturnResponse = await auth().delete(
-      `/customerReturns/${id}`,
+      `/customerReturns/${customerReturn.id}`,
     );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdCustomerReturn) });
+    expect(res.body).toEqual({ data: json(customerReturn) });
 
-    const res2: ErrorResponse = await auth().get(`/customerReturns/${id}`);
+    const res2: ErrorResponse = await auth().get(
+      `/customerReturns/${customerReturn.id}`,
+    );
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("CustomerReturn not found");

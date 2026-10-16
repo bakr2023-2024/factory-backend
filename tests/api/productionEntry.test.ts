@@ -171,23 +171,15 @@ describe("GET /productionEntries/:id", () => {
 });
 
 describe("POST /productionEntries", () => {
-  let productionDayId: number;
-
-  beforeAll(async () => {
-    const productionDay = await createTestProductionDay("2098-01-01");
-    productionDayId = productionDay.id;
-  });
-
   it("should create productionEntry successfully given valid data", async () => {
     const body = {
-      productionDayId,
-      variantId: seed.variants[0].id,
+      productionDayId: seed.productionDays[2].id,
+      variantId: seed.variants[1].id,
     };
 
     const res: ProductionEntryResponse = await auth()
       .post("/productionEntries")
       .send(body);
-
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject(json({ data: body }));
   });
@@ -214,12 +206,10 @@ describe("POST /productionEntries", () => {
   });
 
   it("should fail if productionDay isn't found", async () => {
-    const res: ErrorResponse = await auth()
-      .post("/productionEntries")
-      .send({
-        productionDayId: 99999999,
-        variantId: seed.variants[0].id,
-      });
+    const res: ErrorResponse = await auth().post("/productionEntries").send({
+      productionDayId: 99999999,
+      variantId: seed.variants[0].id,
+    });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
@@ -230,12 +220,10 @@ describe("POST /productionEntries", () => {
   it("should fail if variant isn't found", async () => {
     const productionDay = await createTestProductionDay("2098-01-02");
 
-    const res: ErrorResponse = await auth()
-      .post("/productionEntries")
-      .send({
-        productionDayId: productionDay.id,
-        variantId: 99999999,
-      });
+    const res: ErrorResponse = await auth().post("/productionEntries").send({
+      productionDayId: productionDay.id,
+      variantId: 99999999,
+    });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
@@ -245,26 +233,19 @@ describe("POST /productionEntries", () => {
 });
 
 describe("PATCH /productionEntries/:id", () => {
-  let productionDayId: number;
-
-  beforeAll(async () => {
-    const productionDay = await createTestProductionDay("2098-02-01");
-    productionDayId = productionDay.id;
-  });
-
   it("should correctly update field(s) given id and field(s) to change", async () => {
     const productionEntry = seed.productionEntries[0];
 
     const res: ProductionEntryResponse = await auth()
       .patch(`/productionEntries/${productionEntry.id}`)
-      .send({ productionDayId });
+      .send({ productionDayId: seed.productionDays[1].id });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
         ...json({
           ...productionEntry,
-          productionDayId,
+          productionDayId: seed.productionDays[1].id,
         }),
         updatedAt: expect.any(String),
       },
@@ -274,7 +255,7 @@ describe("PATCH /productionEntries/:id", () => {
   it("should fail given invalid id", async () => {
     const res: ErrorResponse = await auth()
       .patch("/productionEntries/badId")
-      .send({ productionDayId });
+      .send({ productionDayId: seed.productionDays[1].id });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -290,7 +271,7 @@ describe("PATCH /productionEntries/:id", () => {
   it("should fail if productionEntry isn't found", async () => {
     const res: ErrorResponse = await auth()
       .patch("/productionEntries/99999999")
-      .send({ productionDayId });
+      .send({ productionDayId: seed.productionDays[1].id });
 
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("ProductionEntry not found");
@@ -342,20 +323,8 @@ describe("PATCH /productionEntries/:id", () => {
 });
 
 describe("DELETE /productionEntries/:id", () => {
-  let productionEntry: ProductionEntry;
-
-  beforeAll(async () => {
-    const productionDay = await createTestProductionDay("2098-03-01");
-
-    productionEntry = await prisma.productionEntry.create({
-      data: {
-        productionDayId: productionDay.id,
-        variantId: seed.variants[0].id,
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const productionEntry = seed.productionEntries[4];
     const res: ProductionEntryResponse = await auth().delete(
       `/productionEntries/${productionEntry.id}`,
     );

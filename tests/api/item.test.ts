@@ -203,16 +203,8 @@ describe("PATCH /items/:id", () => {
 });
 
 describe("DELETE /items/:id", () => {
-  // every seeded item has variants that are used by other rows, so delete one with no children
-  let createdItem: Item;
-
-  beforeAll(async () => {
-    createdItem = await prisma.item.create({
-      data: { name: "Disposable item", type: ItemType.PRODUCT },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const createdItem = seed.items[3];
     const id = createdItem.id;
     const res: ItemResponse = await auth().delete(`/items/${id}`);
 

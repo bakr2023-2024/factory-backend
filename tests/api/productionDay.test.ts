@@ -3,7 +3,10 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { ProductionDay } from "../../src/db/generated/prisma/client";
+import {
+  ProductionDay,
+  StockMovement,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -21,7 +24,6 @@ import prisma from "../../src/db/prisma";
 
 type ProductionDayResponse = DataResponse<ProductionDay>;
 type PaginatedProductionDaysResponse = PaginationResponse<ProductionDay[]>;
-
 let seed: MockData;
 
 beforeAll(async () => {
@@ -55,7 +57,7 @@ describe("GET /productionDays", () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: [seed.productionDays[2]],
+        data: seed.productionDays.slice(2, 4),
         page: 2,
         size: 2,
         totalPages: 2,
@@ -119,7 +121,7 @@ describe("GET /productionDays", () => {
     const startedTo = seed.productionDays[2].startedAt.toISOString();
 
     const res: PaginatedProductionDaysResponse = await auth().get(
-      `/productionDays?startedFrom=${startedFrom}&startedTo=${startedTo}`,
+      `/productionDays?startedFrom=${encodeURIComponent(startedFrom)}&startedTo=${encodeURIComponent(startedTo)}`,
     );
 
     const from = new Date(startedFrom);
@@ -142,13 +144,11 @@ describe("GET /productionDays", () => {
   });
 
   it("should return production days ended between endedFrom and endedTo", async () => {
-    const endedFrom = seed.productionDays[0].productionDate.toISOString();
-    const endedTo = new Date(
-      seed.productionDays[2].productionDate.getTime() + 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const endedFrom = seed.productionDays[0].endedAt!.toISOString();
+    const endedTo = seed.productionDays[2].endedAt!.toISOString();
 
     const res: PaginatedProductionDaysResponse = await auth().get(
-      `/productionDays?endedFrom=${endedFrom}&endedTo=${endedTo}`,
+      `/productionDays?endedFrom=${encodeURIComponent(endedFrom)}&endedTo=${encodeURIComponent(endedTo)}`,
     );
 
     const from = new Date(endedFrom);
@@ -394,23 +394,9 @@ describe("PATCH /productionDays/:id", () => {
 });
 
 describe("DELETE /productionDays/:id", () => {
-  let createdProductionDay: ProductionDay;
-
-  beforeAll(async () => {
-    createdProductionDay = await prisma.productionDay.create({
-      data: {
-        weekId: seed.weeks[0].id,
-        productionDate: new Date("2026-10-31T00:00:00.000Z"),
-        startedAt: new Date("2026-10-31T07:00:00.000Z"),
-        endedAt: new Date("2026-10-31T15:00:00.000Z"),
-        notes: "Production day for delete tests",
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const createdProductionDay = seed.productionDays[3];
     const id = createdProductionDay.id;
-
     const res: ProductionDayResponse = await auth().delete(
       `/productionDays/${id}`,
     );

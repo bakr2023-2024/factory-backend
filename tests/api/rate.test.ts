@@ -141,11 +141,11 @@ describe("GET /rates", () => {
       }),
     );
   });
-  it("should  all rate given minSalary and maxSalary", async () => {
+  it("should  all rate given minDailySalary and maxDailySalary", async () => {
     const minSalary = seed.rates[0].dailySalary.toNumber();
     const maxSalary = seed.rates[1].dailySalary.toNumber();
     const res: PaginatedRatesResponse = await auth().get(
-      `/rates?minSalary=${minSalary}&maxSalary=${maxSalary}`,
+      `/rates?minDailySalary=${minSalary}&maxDailySalary=${maxSalary}`,
     );
     const filtered = seed.rates.filter(
       (c) =>
@@ -164,12 +164,13 @@ describe("GET /rates", () => {
       }),
     );
   });
-  it("should  all rate given from", async () => {
-    const from = seed.rates[0].from.toISOString().slice(0, 10);
-    const res: PaginatedRatesResponse = await auth().get(`/rates?from=${from}`);
-    const filtered = seed.rates.filter(
-      (r) => r.from.toISOString().slice(0, 10) >= from,
+  it("should  all rate given from and to", async () => {
+    const from = seed.rates[0].from;
+    const to = seed.rates[1].to!;
+    const res: PaginatedRatesResponse = await auth().get(
+      `/rates?from=${encodeURIComponent(from.toISOString().slice(0, 10))}&to=${encodeURIComponent(to.toISOString().slice(0, 10))}`,
     );
+    const filtered = seed.rates.filter((r) => r.from >= from && r.to! <= to);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -398,21 +399,8 @@ describe("PATCH /rates/:id", () => {
 });
 
 describe("DELETE /rates/:id", () => {
-  let createdRate: Rate;
-
-  beforeAll(async () => {
-    createdRate = await prisma.rate.create({
-      data: {
-        laborerId: seed.laborers[0].id,
-        seasonId: seed.seasons[0].id,
-        from: seed.rates[0].from,
-        dailySalary: 200,
-        paymentType: PaymentType.WEEKLY,
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const createdRate = seed.rates[3];
     const id = createdRate.id;
     const res: RateResponse = await auth().delete(`/rates/${id}`);
 

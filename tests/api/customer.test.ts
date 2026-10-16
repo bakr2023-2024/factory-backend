@@ -21,8 +21,6 @@ import prisma from "../../src/db/prisma";
 type CustomerResponse = DataResponse<Customer>;
 type PaginatedCustomersResponse = PaginationResponse<Customer[]>;
 
-const newCustomer = { name: "new customer", number: "01234567890" };
-
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -142,12 +140,14 @@ describe("GET /customers/:id", () => {
 
 describe("POST /customers", () => {
   it("should create customer successfully given name and number", async () => {
-    const res: CustomerResponse = await auth()
-      .post("/customers")
-      .send(newCustomer);
+    const payload = {
+      name: seed.customers[3].name,
+      number: seed.customers[3].number,
+    };
+    const res: CustomerResponse = await auth().post("/customers").send(payload);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ data: newCustomer });
+    expect(res.body).toMatchObject({ data: payload });
   });
 
   it("should fail given invalid name or invalid number", async () => {
@@ -236,21 +236,16 @@ describe("PATCH /customers/:id", () => {
 });
 
 describe("DELETE /customers/:id", () => {
-  // every seeded customer has exports/returns, so delete one with no children
-  let createdCustomer: Customer;
-
-  beforeAll(async () => {
-    createdCustomer = await prisma.customer.create({ data: newCustomer });
-  });
-
   it("should delete successfully given valid id", async () => {
-    const id = createdCustomer.id;
-    const res: CustomerResponse = await auth().delete(`/customers/${id}`);
+    const customer = seed.customers[3];
+    const res: CustomerResponse = await auth().delete(
+      `/customers/${customer.id}`,
+    );
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdCustomer) });
+    expect(res.body).toEqual({ data: json(customer) });
 
-    const res2: ErrorResponse = await auth().get(`/customers/${id}`);
+    const res2: ErrorResponse = await auth().get(`/customers/${customer.id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Customer not found");

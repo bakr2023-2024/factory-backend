@@ -95,7 +95,28 @@ describe("GET /seasons", () => {
       }),
     );
   });
+  it("should return all seasons between startDate and endDate", async () => {
+    const start = seed.seasons[0].startDate;
+    const end = seed.seasons[2].endDate!;
 
+    const res: PaginatedSeasonsResponse = await auth().get(
+      `/seasons?startDate=${encodeURIComponent(start.toISOString().slice(0, 10))}&endDate=${encodeURIComponent(end.toISOString().slice(0, 10))}`,
+    );
+    const filtered = seed.seasons.filter(
+      (s) => s.startDate >= start && s.endDate! <= end,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all seasons sorted according to sortBy and order", async () => {
     const res: PaginatedSeasonsResponse = await auth().get(
       "/seasons?sortBy=startDate&order=desc",
@@ -117,38 +138,7 @@ describe("GET /seasons", () => {
     );
   });
 
-  it("should return all seasons that started between startedFrom and startedTo", async () => {
-    const earliestStart = new Date(
-      Math.min(...seed.seasons.map((season) => season.startDate.getTime())),
-    );
-    const startedFrom = earliestStart.toISOString().slice(0, 10);
-    const startedTo = new Date(earliestStart.getTime() + 24 * 60 * 60 * 1000)
-      .toISOString()
-      .slice(0, 10);
 
-    const res: PaginatedSeasonsResponse = await auth().get(
-      `/seasons?startedFrom=${startedFrom}&startedTo=${startedTo}`,
-    );
-
-    const filtered = [...seed.seasons]
-      .filter(
-        ({ startDate }) =>
-          startDate.toISOString() >= startedFrom &&
-          startDate.toISOString() < startedTo,
-      )
-      .sort((a, b) => a.id - b.id);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: filtered,
-        page: 1,
-        size: 20,
-        totalPages: Math.ceil(filtered.length / 20),
-        totalCount: filtered.length,
-      }),
-    );
-  });
 });
 
 describe("GET /seasons/:id", () => {
@@ -286,18 +276,8 @@ describe("PATCH /seasons/:id", () => {
 });
 
 describe("DELETE /seasons/:id", () => {
-  let season: Season;
-
-  beforeAll(async () => {
-    season = await prisma.season.create({
-      data: {
-        name: "Season created for deletion test",
-        startDate: new Date("2098-05-01T00:00:00.000Z"),
-      },
-    });
-  });
-
   it("should delete successfully given valid id", async () => {
+    const season = seed.seasons[3];
     const res: SeasonResponse = await auth().delete(`/seasons/${season.id}`);
 
     expect(res.status).toBe(200);
