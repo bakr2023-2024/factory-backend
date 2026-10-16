@@ -13,9 +13,7 @@ const strToNum = (message: string, isInt = false) => {
     .transform((val) => Number(val));
 };
 export const fields = {
-  date: z.iso
-    .date({ message: "Invalid Date" })
-    .transform((s) => new Date(`${s}T00:00:00.000Z`)),
+  date: z.iso.date({ message: "Invalid Date" }).transform((s) => new Date(s)),
   dateTime: z.iso.datetime({ message: "Invalid DateTime" }),
   name: z
     .string()
@@ -25,14 +23,15 @@ export const fields = {
     .string()
     .min(5, { message: "Number is too short" })
     .max(40, { message: "Number is too long" }),
-  doubleBody: (message: string = "value can only be a positive number") =>
-    z.number().min(0, { message }),
-  integerBody: (message: string = "value can only be a positive integer") =>
-    z.number().int().min(0, { message }),
-  doubleParam: (message: string = "value can only be a positive number") =>
-    strToNum(message),
-  integerParam: (message: string = "value can only be a positive integer") =>
-    strToNum(message),
+  doubleBody: z
+    .number()
+    .min(0, { message: "value can only be a positive number" }),
+  integerBody: z
+    .number()
+    .int()
+    .min(0, { message: "value can only be a positive integer" }),
+  doubleParam: strToNum("value can only be a positive number"),
+  integerParam: strToNum("value can only be a positive integer"),
   paginate: (table: Prisma.ModelName) =>
     z.strictObject({
       page: strToNum("page can only be a positive integer").default(1),
@@ -43,7 +42,6 @@ export const fields = {
       order: z.enum(Object.values(Prisma.SortOrder)).default("desc"),
     }),
 };
-
 const sortFields: Record<Prisma.ModelName, string[]> = {
   Item: Object.values(Prisma.ItemScalarFieldEnum),
   Variant: Object.values(Prisma.VariantScalarFieldEnum),
@@ -76,3 +74,14 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   LoanPayment: Object.values(Prisma.LoanPaymentScalarFieldEnum),
   Payment: Object.values(Prisma.PaymentScalarFieldEnum),
 };
+export const paginated = <T>(
+  data: T[],
+  { page, size }: { page: number; size: number },
+  totalCount: number,
+) => ({
+  data,
+  page,
+  size,
+  totalPages: Math.ceil(totalCount / size),
+  totalCount,
+});
