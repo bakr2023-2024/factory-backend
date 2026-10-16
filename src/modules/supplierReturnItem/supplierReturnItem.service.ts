@@ -3,10 +3,6 @@ import {
   Prisma,
   StockMovementType,
 } from "../../db/generated/prisma/client";
-import {
-  SupplierReturnItemFindManyArgs,
-  SupplierReturnItemWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -25,72 +21,21 @@ import {
   deleteSupplierReturnItemParamsDTO,
   getSupplierReturnItemParamsDTO,
   paginateSupplierReturnItemsDTO,
+  supplierReturnItemRules,
   updateSupplierReturnItemBodyDTO,
   updateSupplierReturnItemParamsDTO,
 } from "./supplierReturnItem.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getSupplierReturnItems = async (
   pagination: paginateSupplierReturnItemsDTO,
 ): Promise<PaginationType<SupplierReturnItem[]>> => {
-  const { page, size } = pagination;
-  const query: SupplierReturnItemFindManyArgs = {};
-  const where: SupplierReturnItemWhereInput = {};
-  const orderBy: Prisma.SupplierReturnItemOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const supplierReturn: Prisma.SupplierReturnWhereInput = {};
-  const importItem: Prisma.ImportItemWhereInput = {};
-  const unitPrice: Prisma.DecimalFilter = {};
-  if (pagination.supplierReturnId)
-    where.supplierReturnId = pagination.supplierReturnId;
-  if (pagination.importItemId) where.importItemId = pagination.importItemId;
-  if (pagination.supplierId) supplierReturn.supplierId = pagination.supplierId;
-  if (pagination.supplierName) {
-    supplierReturn.supplier = {
-      name: { contains: pagination.supplierName, mode: "insensitive" },
-    };
-  }
-  if (pagination.supplierNumber) {
-    if (supplierReturn.supplier)
-      supplierReturn.supplier.number = {
-        contains: pagination.supplierNumber,
-        mode: "insensitive",
-      };
-    else
-      supplierReturn.supplier = {
-        number: { contains: pagination.supplierNumber, mode: "insensitive" },
-      };
-  }
-  if (pagination.itemName)
-    importItem.variant = {
-      item: { name: { contains: pagination.itemName, mode: "insensitive" } },
-    };
-  if (pagination.unitWeight) {
-    if (importItem.variant)
-      importItem.variant.unitWeight = pagination.unitWeight;
-    else importItem.variant = { unitWeight: pagination.unitWeight };
-  }
-  if (pagination.quantity) where.quantity = pagination.quantity;
-  if (pagination.minPrice) unitPrice.gte = pagination.minPrice;
-  if (pagination.maxPrice) unitPrice.lte = pagination.maxPrice;
-  if (pagination.minPrice || pagination.maxPrice) where.unitPrice = unitPrice;
-
-  if (Object.keys(supplierReturn).length) where.supplierReturn = supplierReturn;
-  if (Object.keys(importItem).length) where.importItem = importItem;
-  if (Object.keys(unitPrice).length) where.unitPrice = unitPrice;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.supplierReturnItem.findMany(query);
-  const totalCount = await prisma.supplierReturnItem.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(supplierReturnItemRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.supplierReturnItem.findMany(query),
+    prisma.supplierReturnItem.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getSupplierReturnItem = async (
   params: getSupplierReturnItemParamsDTO,

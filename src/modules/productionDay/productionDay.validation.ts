@@ -1,9 +1,11 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateProductionDays = {
   query: fields.paginate("ProductionDay").extend({
-    weekId: fields.integerParam().optional(),
+    weekId: fields.integerParam.optional(),
+    seasonId: fields.integerParam.optional(),
     productionDate: fields.date.optional(),
     startedFrom: fields.dateTime.optional(),
     startedTo: fields.dateTime.optional(),
@@ -11,14 +13,25 @@ export const paginateProductionDays = {
     endedTo: fields.dateTime.optional(),
   }),
 };
+export const productionDayRules: FilterRule<paginateProductionDaysDTO>[] = [
+  { path: ["weekId"], param: "weekId" },
+  { path: ["week", "seasonId"], param: "seasonId" },
+  { path: ["productionDate"], param: "productionDate" },
+  { path: ["startedAt"], param: "startedFrom", op: "gte" },
+  { path: ["startedAt"], param: "startedTo", op: "lte" },
+  { path: ["endedAt"], param: "endedFrom", op: "gte" },
+  { path: ["endedAt"], param: "endedTo", op: "lte" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];
 export const getProductionDay = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createProductionDay = {
   body: z.strictObject({
-    weekId: fields.integerBody(),
+    weekId: fields.integerBody,
     productionDate: fields.date,
     startedAt: fields.dateTime,
     endedAt: fields.dateTime.optional(),
@@ -27,10 +40,10 @@ export const createProductionDay = {
 };
 export const updateProductionDay = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
-    weekId: fields.integerBody().optional(),
+    weekId: fields.integerBody.optional(),
     productionDate: fields.date.optional(),
     startedAt: fields.dateTime.optional(),
     endedAt: fields.dateTime.optional(),
@@ -39,7 +52,7 @@ export const updateProductionDay = {
 };
 export const deleteProductionDay = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 

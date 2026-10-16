@@ -3,10 +3,6 @@ import {
   Prisma,
   StockMovementType,
 } from "../../db/generated/prisma/client";
-import {
-  ProductionBatchFindManyArgs,
-  ProductionBatchWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -25,60 +21,21 @@ import {
   deleteProductionBatchParamsDTO,
   getProductionBatchParamsDTO,
   paginateProductionBatchesDTO,
+  productionBatchRules,
   updateProductionBatchBodyDTO,
   updateProductionBatchParamsDTO,
 } from "./productionBatch.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getProductionBatches = async (
   pagination: paginateProductionBatchesDTO,
 ): Promise<PaginationType<ProductionBatch[]>> => {
-  const { page, size } = pagination;
-  const query: ProductionBatchFindManyArgs = {};
-  const where: ProductionBatchWhereInput = {};
-  const orderBy: Prisma.ProductionBatchOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const productionEntry: Prisma.ProductionEntryWhereInput = {};
-  if (pagination.productionEntryId)
-    where.productionEntryId = pagination.productionEntryId;
-  if (pagination.productionDayId)
-    productionEntry.productionDayId = pagination.productionDayId;
-  if (pagination.productionDate)
-    productionEntry.productionDay = {
-      productionDate: pagination.productionDate,
-    };
-  if (pagination.itemName)
-    productionEntry.variant = {
-      item: { name: { contains: pagination.itemName, mode: "insensitive" } },
-    };
-  if (pagination.unitWeight) {
-    if (productionEntry.variant)
-      productionEntry.variant.unitWeight = pagination.unitWeight;
-    else productionEntry.variant = { unitWeight: pagination.unitWeight };
-  }
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(productionEntry).length)
-    where.productionEntry = productionEntry;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.productionBatch.findMany(query);
-  const totalCount = await prisma.productionBatch.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+    const query = buildQuery(productionBatchRules, pagination);
+    const [data, totalCount] = await Promise.all([
+      prisma.productionBatch.findMany(query),
+      prisma.productionBatch.count({ where: query.where }),
+    ]);
+    return paginated(data, pagination, totalCount);
 };
 export const getProductionBatch = async (
   params: getProductionBatchParamsDTO,
@@ -131,7 +88,7 @@ export const updateProductionBatch = async (
       if (body.quantity)
         await updateStockMovement(
           tx,
-          StockMovementType.SUPPLIER_RETURN_ITEM,
+          StockMovementType.PRODUCTION_BATCH,
           productionBatch.id,
           productionBatch.quantity,
         );

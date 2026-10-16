@@ -1,45 +1,63 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateLoanPayments = {
   query: fields.paginate("LoanPayment").extend({
-    laborerId: fields.integerParam().optional(),
+    rateId: fields.integerParam.optional(),
+    laborerId: fields.integerParam.optional(),
     laborerName: fields.name.optional(),
     laborerNumber: fields.number.optional(),
-    loanId: fields.integerParam().optional(),
-    amount: fields.doubleParam().optional(),
-    repaidAt: fields.dateTime.optional(),
-    paymentId: fields.integerParam().optional(),
+    minAmount: fields.doubleParam.optional(),
+    maxAmount: fields.doubleParam.optional(),
+    occurredFrom: fields.dateTime.optional(),
+    occurredTo: fields.dateTime.optional(),
+    paymentId: fields.integerParam.optional(),
   }),
 };
+export const loanPaymentRules: FilterRule<paginateLoanPaymentsDTO>[] = [
+  { path: ["rateId"], param: "rateId" },
+  { path: ["rate", "laborer", "id"], param: "laborerId" },
+  { path: ["rate", "laborer", "name"], param: "laborerName", op: "contains" },
+  {
+    path: ["rate", "laborer", "number"],
+    param: "laborerNumber",
+    op: "contains",
+  },
+  { path: ["amount"], param: "minAmount", op: "gte" },
+  { path: ["amount"], param: "maxAmount", op: "lte" },
+  { path: ["occurredAt"], param: "occurredFrom", op: "gte" },
+  { path: ["occurredAt"], param: "occurredTo", op: "lte" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];
 export const getLoanPayment = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createLoanPayment = {
   body: z.strictObject({
-    loanId: fields.integerBody(),
-    amount: fields.doubleBody(),
-    repaidAt: fields.dateTime.optional(),
+    rateId: fields.integerBody,
+    amount: fields.doubleBody,
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
 export const updateLoanPayment = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
-    loanId: fields.integerBody().optional(),
-    amount: fields.doubleBody().optional(),
-    repaidAt: fields.dateTime.optional(),
-    paymentId:fields.integerBody().optional(),
+    rateId: fields.integerBody.optional(),
+    amount: fields.doubleBody.optional(),
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };
 export const deleteLoanPayment = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 

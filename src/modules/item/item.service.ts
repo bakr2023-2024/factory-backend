@@ -1,20 +1,18 @@
 import { Item, Prisma } from "../../db/generated/prisma/client";
-import {
-  ItemFindManyArgs,
-  ItemWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import { buildQuery } from "../../utils/utils";
 import {
   createItemBodyDTO,
   deleteItemParamsDTO,
   getItemParamsDTO,
+  itemRules,
   paginateItemsDTO,
   updateItemBodyDTO,
   updateItemParamsDTO,
@@ -23,25 +21,12 @@ import {
 export const getItems = async (
   pagination: paginateItemsDTO,
 ): Promise<PaginationType<Item[]>> => {
-  const { page, size } = pagination;
-  const query: ItemFindManyArgs = {};
-  const where: ItemWhereInput = {};
-  const orderBy: Prisma.ItemOrderByWithRelationInput = {};
-  buildQuery(pagination, query, where, orderBy);
-  
-  if (pagination.name)
-    where.name = { contains: pagination.name, mode: "insensitive" };
-
-  const data = await prisma.item.findMany(query);
-  const totalCount = await prisma.item.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(itemRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.item.findMany(query),
+    prisma.item.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getItem = async (params: getItemParamsDTO): Promise<Item> => {
   const item = await prisma.item.findUnique({ where: { id: params.id } });

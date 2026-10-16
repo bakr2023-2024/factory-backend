@@ -3,10 +3,6 @@ import {
   Prisma,
   StockMovementType,
 } from "../../db/generated/prisma/client";
-import {
-  CustomerReturnItemFindManyArgs,
-  CustomerReturnItemWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -22,73 +18,24 @@ import {
 import { PaginationType } from "../../utils/types/types";
 import {
   createCustomerReturnItemBodyDTO,
+  customerReturnItemRules,
   deleteCustomerReturnItemParamsDTO,
   getCustomerReturnItemParamsDTO,
   paginateCustomerReturnItemsDTO,
   updateCustomerReturnItemBodyDTO,
   updateCustomerReturnItemParamsDTO,
 } from "./customerReturnItem.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getCustomerReturnItems = async (
   pagination: paginateCustomerReturnItemsDTO,
 ): Promise<PaginationType<CustomerReturnItem[]>> => {
-  const { page, size } = pagination;
-  const query: CustomerReturnItemFindManyArgs = {};
-  const where: CustomerReturnItemWhereInput = {};
-  const orderBy: Prisma.CustomerReturnItemOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const customerReturn: Prisma.CustomerReturnWhereInput = {};
-  const exportItem: Prisma.ExportItemWhereInput = {};
-  const unitPrice: Prisma.DecimalFilter = {};
-  if (pagination.customerReturnId)
-    where.customerReturnId = pagination.customerReturnId;
-  if (pagination.exportItemId) where.exportItemId = pagination.exportItemId;
-  if (pagination.customerId) customerReturn.customerId = pagination.customerId;
-  if (pagination.customerName) {
-    customerReturn.customer = {
-      name: { contains: pagination.customerName, mode: "insensitive" },
-    };
-  }
-  if (pagination.customerNumber) {
-    if (customerReturn.customer)
-      customerReturn.customer.number = {
-        contains: pagination.customerNumber,
-        mode: "insensitive",
-      };
-    else
-      customerReturn.customer = {
-        number: { contains: pagination.customerNumber, mode: "insensitive" },
-      };
-  }
-  if (pagination.itemName)
-    exportItem.variant = {
-      item: { name: { contains: pagination.itemName, mode: "insensitive" } },
-    };
-  if (pagination.unitWeight) {
-    if (exportItem.variant)
-      exportItem.variant.unitWeight = pagination.unitWeight;
-    else exportItem.variant = { unitWeight: pagination.unitWeight };
-  }
-  if (pagination.quantity) where.quantity = pagination.quantity;
-  if (pagination.minPrice) unitPrice.gte = pagination.minPrice;
-  if (pagination.maxPrice) unitPrice.lte = pagination.maxPrice;
-  if (Object.keys(customerReturn).length) where.customerReturn = customerReturn;
-  if (Object.keys(exportItem).length) where.exportItem = exportItem;
-  if (Object.keys(unitPrice).length) where.unitPrice = unitPrice;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.customerReturnItem.findMany(query);
-  const totalCount = await prisma.customerReturnItem.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(customerReturnItemRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.customerReturnItem.findMany(query),
+    prisma.customerReturnItem.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getCustomerReturnItem = async (
   params: getCustomerReturnItemParamsDTO,

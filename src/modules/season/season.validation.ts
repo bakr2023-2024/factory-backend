@@ -1,20 +1,27 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
 import { SeasonKind } from "../../db/generated/prisma/enums";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateSeasons = {
   query: fields.paginate("Season").extend({
     name: fields.name.optional(),
-    startedFrom: fields.date.optional(),
-    startedTo: fields.date.optional(),
-    endedFrom: fields.date.optional(),
-    endedTo: fields.date.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
     kind: z.enum(Object.values(SeasonKind)).optional(),
   }),
 };
+export const seasonRules: FilterRule<paginateSeasonsDTO>[] = [
+  { path: ["name"], param: "name", op: "contains" },
+  { path: ["kind"], param: "kind" },
+  { path: ["startDate"], param: "startDate", op: "gte" },
+  { path: ["endDate"], param: "endDate", op: "lte" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];
 export const getSeason = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createSeason = {
@@ -27,7 +34,7 @@ export const createSeason = {
 };
 export const updateSeason = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
     startDate: fields.date.optional(),
@@ -38,7 +45,7 @@ export const updateSeason = {
 };
 export const deleteSeason = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 

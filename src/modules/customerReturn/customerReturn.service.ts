@@ -1,8 +1,4 @@
 import { CustomerReturn, Prisma } from "../../db/generated/prisma/client";
-import {
-  CustomerReturnFindManyArgs,
-  CustomerReturnWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -13,57 +9,21 @@ import { buildQuery } from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
   createCustomerReturnBodyDTO,
+  customerReturnRules,
   deleteCustomerReturnParamsDTO,
   getCustomerReturnParamsDTO,
   paginateCustomerReturnsDTO,
   updateCustomerReturnBodyDTO,
   updateCustomerReturnParamsDTO,
 } from "./customerReturn.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getCustomerReturns = async (
   pagination: paginateCustomerReturnsDTO,
 ): Promise<PaginationType<CustomerReturn[]>> => {
-  const { page, size } = pagination;
-  const query: CustomerReturnFindManyArgs = {};
-  const where: CustomerReturnWhereInput = {};
-  const orderBy: Prisma.CustomerReturnOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const customer: Prisma.CustomerWhereInput = {};
-    if (pagination.productionDayId)
-      where.productionDayId = pagination.productionDayId;
-    if (pagination.productionDate)
-      where.productionDay = { productionDate: pagination.productionDate };
-  if (pagination.customerName)
-    customer.name = { contains: pagination.customerName, mode: "insensitive" };
-  if (pagination.customerNumber)
-    customer.number = {
-      contains: pagination.customerNumber,
-      mode: "insensitive",
-    };
-  if (pagination.customerId) where.customerId = pagination.customerId;
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(customer).length) where.customer = customer;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.customerReturn.findMany(query);
-  const totalCount = await prisma.customerReturn.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(customerReturnRules,pagination)
+  const [data,totalCount] = await Promise.all([prisma.customerReturn.findMany(query),prisma.customerReturn.count({where:query.where})])
+  return paginated(data,pagination,totalCount)
 };
 export const getCustomerReturn = async (
   params: getCustomerReturnParamsDTO,

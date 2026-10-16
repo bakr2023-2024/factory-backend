@@ -1,6 +1,7 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
 import { ItemType } from "../../db/generated/prisma/enums";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateItems = {
   query: fields.paginate("Item").extend({
@@ -10,7 +11,7 @@ export const paginateItems = {
 };
 export const getItem = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createItem = {
@@ -22,7 +23,7 @@ export const createItem = {
 };
 export const updateItem = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -32,7 +33,7 @@ export const updateItem = {
 };
 export const deleteItem = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 
@@ -42,3 +43,9 @@ export type createItemBodyDTO = z.infer<typeof createItem.body>;
 export type updateItemParamsDTO = z.infer<typeof updateItem.params>;
 export type updateItemBodyDTO = z.infer<typeof updateItem.body>;
 export type deleteItemParamsDTO = z.infer<typeof deleteItem.params>;
+export const itemRules: FilterRule<paginateItemsDTO>[] = [
+  { path: ["name"], param: "name", op: "contains" },
+  { path: ["type"], param: "type" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];

@@ -1,24 +1,31 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateWeeks = {
   query: fields.paginate("Week").extend({
     seasonName: fields.name.optional(),
-    seasonId: fields.integerParam().optional(),
-    startedFrom: fields.date.optional(),
-    startedTo: fields.date.optional(),
-    endedFrom: fields.date.optional(),
-    endedTo: fields.date.optional(),
+    seasonId: fields.integerParam.optional(),
+    startDate: fields.date.optional(),
+    endDate: fields.date.optional(),
   }),
 };
+export const weekRules: FilterRule<paginateWeeksDTO>[] = [
+  { path: ["seasonId"], param: "seasonId" },
+  { path: ["season", "name"], param: "seasonName", op: "contains" },
+  { path: ["startDate"], param: "startDate", op: "gte" },
+  { path: ["endDate"], param: "endDate", op: "lte" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];
 export const getWeek = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createWeek = {
   body: z.strictObject({
-    seasonId: fields.integerBody(),
+    seasonId: fields.integerBody,
     startDate: fields.date.optional(),
     endDate: fields.date.optional(),
     notes: z.string().optional(),
@@ -26,10 +33,10 @@ export const createWeek = {
 };
 export const updateWeek = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
-    seasonId: fields.integerBody().optional(),
+    seasonId: fields.integerBody.optional(),
     startDate: fields.date.optional(),
     endDate: fields.date.optional(),
     notes: z.string().optional(),
@@ -37,7 +44,7 @@ export const updateWeek = {
 };
 export const deleteWeek = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 

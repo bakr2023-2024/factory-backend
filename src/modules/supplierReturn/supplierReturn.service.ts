@@ -1,8 +1,4 @@
 import { SupplierReturn, Prisma } from "../../db/generated/prisma/client";
-import {
-  SupplierReturnFindManyArgs,
-  SupplierReturnWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -16,56 +12,21 @@ import {
   deleteSupplierReturnParamsDTO,
   getSupplierReturnParamsDTO,
   paginateSupplierReturnsDTO,
+  supplierReturnRules,
   updateSupplierReturnBodyDTO,
   updateSupplierReturnParamsDTO,
 } from "./supplierReturn.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getSupplierReturns = async (
   pagination: paginateSupplierReturnsDTO,
 ): Promise<PaginationType<SupplierReturn[]>> => {
-  const { page, size } = pagination;
-  const query: SupplierReturnFindManyArgs = {};
-  const where: SupplierReturnWhereInput = {};
-  const orderBy: Prisma.SupplierReturnOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const supplier: Prisma.SupplierWhereInput = {};
-  if (pagination.productionDayId)
-        where.productionDayId = pagination.productionDayId;
-  if (pagination.productionDate)
-      where.productionDay = { productionDate: pagination.productionDate };
-  if (pagination.supplierName)
-    supplier.name = { contains: pagination.supplierName, mode: "insensitive" };
-  if (pagination.supplierNumber) {
-    supplier.number = {
-      contains: pagination.supplierNumber,
-      mode: "insensitive",
-    };
-  }
-  if (pagination.supplierId) where.supplierId = pagination.supplierId;
-
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(supplier).length) where.supplier = supplier;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.supplierReturn.findMany(query);
-  const totalCount = await prisma.supplierReturn.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(supplierReturnRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.supplierReturn.findMany(query),
+    prisma.supplierReturn.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getSupplierReturn = async (
   params: getSupplierReturnParamsDTO,

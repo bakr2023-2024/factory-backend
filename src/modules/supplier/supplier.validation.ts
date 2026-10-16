@@ -1,5 +1,6 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateSuppliers = {
   query: fields.paginate("Supplier").extend({
@@ -7,9 +8,15 @@ export const paginateSuppliers = {
     number: fields.number.optional(),
   }),
 };
+export const supplierRules: FilterRule<paginateSuppliersDTO>[] = [
+  { path: ["name"], param: "name", op: "contains" },
+  { path: ["number"], param: "number", op: "contains" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];
 export const getSupplier = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createSupplier = {
@@ -21,7 +28,7 @@ export const createSupplier = {
 };
 export const updateSupplier = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +38,7 @@ export const updateSupplier = {
 };
 export const deleteSupplier = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 

@@ -1,14 +1,11 @@
 import { Season, Prisma } from "../../db/generated/prisma/client";
-import {
-  SeasonFindManyArgs,
-  SeasonWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import { buildQuery } from "../../utils/utils";
 import {
@@ -16,6 +13,7 @@ import {
   deleteSeasonParamsDTO,
   getSeasonParamsDTO,
   paginateSeasonsDTO,
+  seasonRules,
   updateSeasonBodyDTO,
   updateSeasonParamsDTO,
 } from "./season.validation";
@@ -23,38 +21,12 @@ import {
 export const getSeasons = async (
   pagination: paginateSeasonsDTO,
 ): Promise<PaginationType<Season[]>> => {
-  const { page, size } = pagination;
-  const query: SeasonFindManyArgs = {};
-  const where: SeasonWhereInput = {};
-  const orderBy: Prisma.SeasonOrderByWithRelationInput = {};
-
-  if (pagination.name)
-    where.name = { contains: pagination.name, mode: "insensitive" };
-
-  const startDate: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy == "startDate") orderBy.startDate = pagination.order;
-  if (pagination.startedFrom) startDate.gte = pagination.startedFrom;
-  if (pagination.startedTo) startDate.lte = pagination.startedTo;
-  if (pagination.startedFrom || pagination.startedTo)
-    where.startDate = startDate;
-  const endDate: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy == "endDate") orderBy.endDate = pagination.order;
-  if (pagination.endedFrom) endDate.gte = pagination.endedFrom;
-  if (pagination.endedTo) endDate.lte = pagination.endedTo;
-  if (pagination.endedFrom || pagination.endedTo) where.endDate = endDate;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.season.findMany(query);
-  const totalCount = await prisma.season.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(seasonRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.season.findMany(query),
+    prisma.season.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getSeason = async (
   params: getSeasonParamsDTO,

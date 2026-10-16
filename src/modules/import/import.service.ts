@@ -1,20 +1,18 @@
 import { Import, Prisma } from "../../db/generated/prisma/client";
-import {
-  ImportFindManyArgs,
-  ImportWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import { buildQuery } from "../../utils/utils";
 import {
   createImportBodyDTO,
   deleteImportParamsDTO,
   getImportParamsDTO,
+  importRules,
   paginateImportsDTO,
   updateImportBodyDTO,
   updateImportParamsDTO,
@@ -23,49 +21,12 @@ import {
 export const getImports = async (
   pagination: paginateImportsDTO,
 ): Promise<PaginationType<Import[]>> => {
-  const { page, size } = pagination;
-  const query: ImportFindManyArgs = {};
-  const where: ImportWhereInput = {};
-  const orderBy: Prisma.ImportOrderByWithRelationInput = {};
-
-  const supplier: Prisma.SupplierWhereInput = {};
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
-  if (pagination.productionDate)
-    where.productionDay = { productionDate: pagination.productionDate };
-  if (pagination.supplierId) where.supplierId = pagination.supplierId;
-  if (pagination.supplierName)
-    supplier.name = {
-      contains: pagination.supplierName,
-      mode: "insensitive",
-    };
-  if (pagination.supplierNumber)
-    supplier.number = {
-      contains: pagination.supplierNumber,
-      mode: "insensitive",
-    };
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(supplier).length) where.supplier = supplier;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.import.findMany(query);
-  const totalCount = await prisma.import.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(importRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.import.findMany(query),
+    prisma.import.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getImport = async (
   params: getImportParamsDTO,
@@ -83,7 +44,9 @@ export const createImport = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No supplier/productionDay exists with that ID");
+        throw new ConflictException(
+          "No supplier/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }
@@ -102,7 +65,9 @@ export const updateImport = async (
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025") throw new NotFoundException("Import not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No supplier/productionDay exists with that ID");
+        throw new ConflictException(
+          "No supplier/productionDay exists with that ID",
+        );
     }
     throw new InternalServerException((err as Error).message);
   }

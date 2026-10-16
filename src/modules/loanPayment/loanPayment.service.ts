@@ -1,60 +1,33 @@
 import { LoanPayment, Prisma } from "../../db/generated/prisma/client";
-import {
-  LoanPaymentFindManyArgs,
-  LoanPaymentWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
+  HttpException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
-import { buildQuery } from "../../utils/utils";
+import { buildQuery, throwIfPaidRate } from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
   createLoanPaymentBodyDTO,
   deleteLoanPaymentParamsDTO,
   getLoanPaymentParamsDTO,
+  loanPaymentRules,
   paginateLoanPaymentsDTO,
   updateLoanPaymentBodyDTO,
   updateLoanPaymentParamsDTO,
 } from "./loanPayment.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getLoanPayments = async (
   pagination: paginateLoanPaymentsDTO,
 ): Promise<PaginationType<LoanPayment[]>> => {
-  const { page, size } = pagination;
-  const query: LoanPaymentFindManyArgs = {};
-  const where: LoanPaymentWhereInput = {};
-  const orderBy: Prisma.LoanPaymentOrderByWithRelationInput = {};
-  const laborer: Prisma.LaborerWhereInput = {};
-  // inject fields into query
-  if (pagination.laborerId) laborer.id = pagination.laborerId;
-  if (pagination.laborerName)
-    laborer.name = { contains: pagination.laborerName, mode: "insensitive" };
-  if (pagination.laborerNumber)
-    laborer.number = {
-      contains: pagination.laborerNumber,
-      mode: "insensitive",
-    };
-  if (pagination.loanId) where.loanId = pagination.loanId;
-  if (pagination.amount) where.amount = pagination.amount;
-  if (pagination.repaidAt) where.repaidAt = { gte: pagination.repaidAt };
-  if (pagination.paymentId) where.paymentId = pagination.paymentId;
-  if (Object.keys(laborer).length) where.loan = { laborer };
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.loanPayment.findMany(query);
-  const totalCount = await prisma.loanPayment.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(loanPaymentRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.loanPayment.findMany(query),
+    prisma.loanPayment.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getLoanPayment = async (
   params: getLoanPaymentParamsDTO,
@@ -69,15 +42,15 @@ export const createLoanPayment = async (
   body: createLoanPaymentBodyDTO,
 ): Promise<LoanPayment> => {
   try {
-    const loanPayment = await prisma.loanPayment.create({ data: body });
-    return loanPayment;
+    return await prisma.$transaction(async (tx) => {
+      await throwIfPaidRate(tx, body.rateId);
+      return await tx.loanPayment.create({ data: body });
+    });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException(
-          "No loan exists with that ID",
-        );
-    }
+        throw new ConflictException("No rate exists with that ID");
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -86,20 +59,23 @@ export const updateLoanPayment = async (
   body: updateLoanPaymentBodyDTO,
 ): Promise<LoanPayment> => {
   try {
-    const loanPayment = await prisma.loanPayment.update({
-      where: { id: params.id },
-      data: body,
+    return await prisma.$transaction(async (tx) => {
+      const loanPayment = await tx.loanPayment.findUniqueOrThrow({
+        where: { id: params.id },
+      });
+      await throwIfPaidRate(tx, loanPayment.rateId, body.rateId);
+      return await tx.loanPayment.update({
+        where: { id: params.id },
+        data: body,
+      });
     });
-    return loanPayment;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
         throw new NotFoundException("LoanPayment not found");
       else if (err.code === "P2003")
-        throw new ConflictException(
-          "No loan exists with that ID",
-        );
-    }
+        throw new ConflictException("No rate exists with that ID");
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -107,10 +83,13 @@ export const deleteLoanPayment = async (
   params: deleteLoanPaymentParamsDTO,
 ): Promise<LoanPayment> => {
   try {
-    const loanPayment = await prisma.loanPayment.delete({
-      where: { id: params.id },
+    return await prisma.$transaction(async (tx) => {
+      const loanPayment = await tx.loanPayment.findUniqueOrThrow({
+        where: { id: params.id },
+      });
+      await throwIfPaidRate(tx, loanPayment.rateId);
+      return await tx.loanPayment.delete({ where: { id: params.id } });
     });
-    return loanPayment;
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025")
@@ -119,7 +98,7 @@ export const deleteLoanPayment = async (
         throw new ConflictException(
           "A child record still depends on this parent record",
         );
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };

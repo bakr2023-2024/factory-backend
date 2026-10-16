@@ -1,8 +1,4 @@
 import { ProductionDay, Prisma } from "../../db/generated/prisma/client";
-import {
-  ProductionDayFindManyArgs,
-  ProductionDayWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -16,45 +12,21 @@ import {
   deleteProductionDayParamsDTO,
   getProductionDayParamsDTO,
   paginateProductionDaysDTO,
+  productionDayRules,
   updateProductionDayBodyDTO,
   updateProductionDayParamsDTO,
 } from "./productionDay.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getProductionDays = async (
   pagination: paginateProductionDaysDTO,
 ): Promise<PaginationType<ProductionDay[]>> => {
-  const { page, size } = pagination;
-  const query: ProductionDayFindManyArgs = {};
-  const where: ProductionDayWhereInput = {};
-  const orderBy: Prisma.ProductionDayOrderByWithRelationInput = {};
-
-  // inject fields into query
-
-  const startedAt: Prisma.DateTimeFilter = {};
-  if (pagination.startedFrom) startedAt.gte = pagination.startedFrom;
-  if (pagination.startedTo) startedAt.lte = pagination.startedTo;
-  if (pagination.startedFrom || pagination.startedTo)
-    where.startedAt = startedAt;
-  const endedAt: Prisma.DateTimeFilter = {};
-  if (pagination.endedFrom) endedAt.gte = pagination.endedFrom;
-  if (pagination.endedTo) endedAt.lte = pagination.endedTo;
-  if (pagination.endedFrom || pagination.endedTo) where.endedAt = endedAt;
-  if (pagination.productionDate)
-    where.productionDate = pagination.productionDate;
-  if (pagination.weekId) where.weekId = pagination.weekId;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.productionDay.findMany(query);
-  const totalCount = await prisma.productionDay.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(productionDayRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.productionDay.findMany(query),
+    prisma.productionDay.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getProductionDay = async (
   params: getProductionDayParamsDTO,

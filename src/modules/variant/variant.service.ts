@@ -1,14 +1,11 @@
 import { Variant, Prisma } from "../../db/generated/prisma/client";
-import {
-  VariantFindManyArgs,
-  VariantWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import { buildQuery } from "../../utils/utils";
 import {
@@ -18,33 +15,18 @@ import {
   paginateVariantsDTO,
   updateVariantBodyDTO,
   updateVariantParamsDTO,
+  variantRules,
 } from "./variant.validation";
 
 export const getVariants = async (
   pagination: paginateVariantsDTO,
 ): Promise<PaginationType<Variant[]>> => {
-  const { page, size } = pagination;
-  const query: VariantFindManyArgs = {};
-  const where: VariantWhereInput = {};
-  const orderBy: Prisma.VariantOrderByWithRelationInput = {};
-  buildQuery(pagination, query, where, orderBy);
-
-  if (pagination.itemId) where.itemId = pagination.itemId;
-  if (pagination.itemName)
-    where.item = {
-      name: { contains: pagination.itemName, mode: "insensitive" },
-    };
-  
-  const data = await prisma.variant.findMany(query);
-  const totalCount = await prisma.variant.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(variantRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.variant.findMany(query),
+    prisma.variant.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getVariant = async (
   params: getVariantParamsDTO,

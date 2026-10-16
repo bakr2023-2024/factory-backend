@@ -3,11 +3,6 @@ import {
   Prisma,
   StockMovementType,
 } from "../../db/generated/prisma/client";
-import {
-  ConsumptionFindManyArgs,
-  ConsumptionWhereInput,
-  VariantWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -22,6 +17,7 @@ import {
 } from "../../utils/utils";
 import { PaginationType } from "../../utils/types/types";
 import {
+  consumptionRules,
   createConsumptionBodyDTO,
   deleteConsumptionParamsDTO,
   getConsumptionParamsDTO,
@@ -29,52 +25,19 @@ import {
   updateConsumptionBodyDTO,
   updateConsumptionParamsDTO,
 } from "./consumption.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getConsumptions = async (
   pagination: paginateConsumptionsDTO,
 ): Promise<PaginationType<Consumption[]>> => {
-  const { page, size } = pagination;
-  const query: ConsumptionFindManyArgs = {};
-  const where: ConsumptionWhereInput = {};
-  const orderBy: Prisma.ConsumptionOrderByWithRelationInput = {};
-
-  // inject fields into query
-  const variant: VariantWhereInput = {};
-  if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
-  if (pagination.variantId) where.variantId = pagination.variantId;
-  if (pagination.productionDate)
-    where.productionDay = { productionDate: pagination.productionDate };
-  if (pagination.itemName)
-    variant.item = {
-      name: { contains: pagination.itemName, mode: "insensitive" },
-    };
-  if (pagination.unitWeight) variant.unitWeight = pagination.unitWeight;
-  if (pagination.quantity) where.quantity = pagination.quantity;
-
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(variant).length > 0) where.variant = variant;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.consumption.findMany(query);
-  const totalCount = await prisma.consumption.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(consumptionRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.consumption.findMany(query),
+    prisma.consumption.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
+
 export const getConsumption = async (
   params: getConsumptionParamsDTO,
 ): Promise<Consumption> => {

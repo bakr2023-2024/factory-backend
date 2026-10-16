@@ -9,6 +9,7 @@ import {
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import {
   buildQuery,
@@ -19,6 +20,7 @@ import {
 import {
   createExportItemBodyDTO,
   deleteExportItemParamsDTO,
+  exportItemRules,
   getExportItemParamsDTO,
   paginateExportItemsDTO,
   updateExportItemBodyDTO,
@@ -28,78 +30,9 @@ import {
 export const getExportItems = async (
   pagination: paginateExportItemsDTO,
 ): Promise<PaginationType<ExportItem[]>> => {
-  const { page, size } = pagination;
-
-  const query: Prisma.ExportItemFindManyArgs = {};
-  const where: Prisma.ExportItemWhereInput = {};
-  const orderBy: Prisma.ExportItemOrderByWithRelationInput = {};
-
-  const exporte: Prisma.ExportWhereInput = {};
-  const variant: Prisma.VariantWhereInput = {};
-  const unitPrice: Prisma.DecimalFilter = {};
-  if (pagination.customerId) exporte.customerId = pagination.customerId;
-
-  if (pagination.variantId) where.variantId = pagination.variantId;
-
-  if (pagination.exportId) where.exportId = pagination.exportId;
-
-  if (pagination.itemId) variant.itemId = pagination.itemId;
-
-  if (pagination.customerName) {
-    exporte.customer = {
-      name: {
-        contains: pagination.customerName,
-        mode: "insensitive",
-      },
-    };
-  }
-  if (pagination.customerNumber) {
-    if (exporte.customer)
-      exporte.customer.number = {
-        contains: pagination.customerNumber,
-        mode: "insensitive",
-      };
-    else
-      exporte.customer = {
-        number: {
-          contains: pagination.customerNumber,
-          mode: "insensitive",
-        },
-      };
-  }
-
-  if (pagination.itemName) {
-    variant.item = {
-      name: {
-        contains: pagination.itemName,
-        mode: "insensitive",
-      },
-    };
-  }
-
-  if (pagination.minPrice)
-    unitPrice.gte = new Prisma.Decimal(pagination.minPrice);
-  if (pagination.maxPrice)
-    unitPrice.lte = new Prisma.Decimal(pagination.maxPrice);
-
-  if (Object.keys(exporte).length) where.export = exporte;
-  if (Object.keys(variant).length) where.variant = variant;
-  if (Object.keys(unitPrice).length) where.unitPrice = unitPrice;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.exportItem.findMany(query);
-
-  const totalCount = await prisma.exportItem.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+   const query = buildQuery(exportItemRules,pagination)
+  const [data,totalCount] = await Promise.all([prisma.exportItem.findMany(query),prisma.exportItem.count({where:query.where})])
+  return paginated(data,pagination,totalCount)
 };
 export const getExportItem = async (
   params: getExportItemParamsDTO,
@@ -115,7 +48,7 @@ export const createExportItem = async (
 ): Promise<ExportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const exportItem = await prisma.exportItem.create({
+      const exportItem = await tx.exportItem.create({
         data: body,
         include: { export: true },
       });
@@ -142,7 +75,7 @@ export const updateExportItem = async (
 ): Promise<ExportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const exportItem = await prisma.exportItem.update({
+      const exportItem = await tx.exportItem.update({
         where: { id: params.id },
         data: body,
       });
@@ -170,7 +103,7 @@ export const deleteExportItem = async (
 ): Promise<ExportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const exportItem = await prisma.exportItem.delete({
+      const exportItem = await tx.exportItem.delete({
         where: { id: params.id },
       });
       await deleteStockMovement(

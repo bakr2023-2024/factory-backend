@@ -1,19 +1,17 @@
 import { Export, Prisma } from "../../db/generated/prisma/client";
-import {
-  ExportFindManyArgs,
-  ExportWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
+import { paginated } from "../../utils/generalFields";
 import { PaginationType } from "../../utils/types/types";
 import { buildQuery } from "../../utils/utils";
 import {
   createExportBodyDTO,
   deleteExportParamsDTO,
+  exportRules,
   getExportParamsDTO,
   paginateExportsDTO,
   updateExportBodyDTO,
@@ -23,49 +21,9 @@ import {
 export const getExports = async (
   pagination: paginateExportsDTO,
 ): Promise<PaginationType<Export[]>> => {
-  const { page, size } = pagination;
-  const query: ExportFindManyArgs = {};
-  const where: ExportWhereInput = {};
-  const orderBy: Prisma.ExportOrderByWithRelationInput = {};
-
-  const customer: Prisma.CustomerWhereInput = {};
-  const occurredAt: Prisma.DateTimeFilter = {};
-  if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
-  if (pagination.productionDate)
-    where.productionDay = { productionDate: pagination.productionDate };
-  if (pagination.customerId) where.customerId = pagination.customerId;
-  if (pagination.customerName)
-    customer.name = {
-      contains: pagination.customerName,
-      mode: "insensitive",
-    };
-  if (pagination.customerNumber)
-    customer.number = {
-      contains: pagination.customerNumber,
-      mode: "insensitive",
-    };
-  if (pagination.sortBy && pagination.sortBy == "occurredAt")
-    orderBy.occurredAt = pagination.order;
-  if (pagination.occurredFrom) occurredAt.gte = pagination.occurredFrom;
-  if (pagination.occurredTo) occurredAt.lte = pagination.occurredTo;
-  if (pagination.occurredFrom || pagination.occurredTo)
-    where.occurredAt = occurredAt;
-
-  if (Object.keys(customer).length) where.customer = customer;
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.export.findMany(query);
-  const totalCount = await prisma.export.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(exportRules,pagination)
+  const [data,totalCount] = await Promise.all([prisma.export.findMany(query),prisma.export.count({where:query.where})])
+  return paginated(data,pagination,totalCount)
 };
 export const getExport = async (
   params: getExportParamsDTO,

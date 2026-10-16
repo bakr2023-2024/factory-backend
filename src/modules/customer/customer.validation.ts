@@ -1,5 +1,6 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { FilterRule } from "../../utils/utils";
 
 export const paginateCustomers = {
   query: fields.paginate("Customer").extend({
@@ -9,7 +10,7 @@ export const paginateCustomers = {
 };
 export const getCustomer = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 export const createCustomer = {
@@ -21,7 +22,7 @@ export const createCustomer = {
 };
 export const updateCustomer = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
   body: z.strictObject({
     name: fields.name.optional(),
@@ -31,7 +32,7 @@ export const updateCustomer = {
 };
 export const deleteCustomer = {
   params: z.strictObject({
-    id: fields.integerParam(),
+    id: fields.integerParam,
   }),
 };
 
@@ -41,3 +42,9 @@ export type createCustomerBodyDTO = z.infer<typeof createCustomer.body>;
 export type updateCustomerParamsDTO = z.infer<typeof updateCustomer.params>;
 export type updateCustomerBodyDTO = z.infer<typeof updateCustomer.body>;
 export type deleteCustomerParamsDTO = z.infer<typeof deleteCustomer.params>;
+export const customerRules: FilterRule<paginateCustomersDTO>[] = [
+  { path: ["name"], param: "name", op: "contains" },
+  { path: ["number"], param: "number", op: "contains" },
+  { path: ["createdAt"], param: "createdFrom", op: "gte" },
+  { path: ["createdAt"], param: "createdTo", op: "lte" },
+];

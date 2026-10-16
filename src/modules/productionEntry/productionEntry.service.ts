@@ -1,8 +1,4 @@
 import { ProductionEntry, Prisma } from "../../db/generated/prisma/client";
-import {
-  ProductionEntryFindManyArgs,
-  ProductionEntryWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -16,49 +12,21 @@ import {
   deleteProductionEntryParamsDTO,
   getProductionEntryParamsDTO,
   paginateProductionEntriesDTO,
+  productionEntryRules,
   updateProductionEntryBodyDTO,
   updateProductionEntryParamsDTO,
 } from "./productionEntry.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getProductionEntries = async (
   pagination: paginateProductionEntriesDTO,
 ): Promise<PaginationType<ProductionEntry[]>> => {
-  const { page, size } = pagination;
-  const query: ProductionEntryFindManyArgs = {};
-  const where: ProductionEntryWhereInput = {};
-  const orderBy: Prisma.ProductionEntryOrderByWithRelationInput = {};
-  // inject fields into query
-  const productionDay: Prisma.ProductionDayWhereInput = {};
-  const variant: Prisma.VariantWhereInput = {};
-  if (pagination.productionDayId)
-    where.productionDayId = pagination.productionDayId;
-  if (pagination.variantId) where.variantId = pagination.variantId;
-  if (pagination.productionDate) {
-    productionDay.productionDate = pagination.productionDate;
-  }
-  if (pagination.itemName) {
-    variant.item = {
-      name: { contains: pagination.itemName, mode: "insensitive" },
-    };
-  }
-  if (pagination.unitWeight) {
-    variant.unitWeight = pagination.unitWeight;
-  }
-
-  if (Object.keys(productionDay).length) where.productionDay = productionDay;
-  if (Object.keys(variant).length) where.variant = variant;
-
-  buildQuery(pagination, query, where, orderBy);
-  const data = await prisma.productionEntry.findMany(query);
-  const totalCount = await prisma.productionEntry.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(productionEntryRules, pagination);
+  const [data, totalCount] = await Promise.all([
+    prisma.productionEntry.findMany(query),
+    prisma.productionEntry.count({ where: query.where }),
+  ]);
+  return paginated(data, pagination, totalCount);
 };
 export const getProductionEntry = async (
   params: getProductionEntryParamsDTO,

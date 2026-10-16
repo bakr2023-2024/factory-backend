@@ -1,8 +1,4 @@
 import { Laborer, Prisma } from "../../db/generated/prisma/client";
-import {
-  LaborerFindManyArgs,
-  LaborerWhereInput,
-} from "../../db/generated/prisma/models";
 import prisma from "../../db/prisma";
 import {
   ConflictException,
@@ -15,37 +11,19 @@ import {
   createLaborerBodyDTO,
   deleteLaborerParamsDTO,
   getLaborerParamsDTO,
+  laborerRules,
   paginateLaborersDTO,
   updateLaborerBodyDTO,
   updateLaborerParamsDTO,
 } from "./laborer.validation";
+import { paginated } from "../../utils/generalFields";
 
 export const getLaborers = async (
   pagination: paginateLaborersDTO,
 ): Promise<PaginationType<Laborer[]>> => {
-  const { page, size } = pagination;
-  const query: LaborerFindManyArgs = {};
-  const where: LaborerWhereInput = {};
-  const orderBy: Prisma.LaborerOrderByWithRelationInput = {};
-
-  // inject fields into query
-  if (pagination.name)
-    where.name = { contains: pagination.name, mode: "insensitive" };
-  if (pagination.number)
-    where.number = { contains: pagination.number, mode: "insensitive" };
-
-  buildQuery(pagination, query, where, orderBy);
-
-  const data = await prisma.laborer.findMany(query);
-  const totalCount = await prisma.laborer.count({ where });
-  const totalPages = Math.ceil(totalCount / size);
-  return {
-    data,
-    page,
-    size,
-    totalPages,
-    totalCount,
-  };
+  const query = buildQuery(laborerRules,pagination)
+  const [data,totalCount] = await Promise.all([prisma.laborer.findMany(query),prisma.laborer.count({where:query.where})])
+  return paginated(data,pagination,totalCount)
 };
 export const getLaborer = async (
   params: getLaborerParamsDTO,
