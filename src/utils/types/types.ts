@@ -10,3 +10,14 @@ export type PaginationType<T> = {
   totalPages: number;
   totalCount: number;
 };
+export type PaymentPreview = {
+  rateId: number;
+  days: number;
+  dailySalary: number;
+  gross: number;
+  loans: number;
+  loanPayments: number;
+  net: number;
+  paid: boolean;
+  occurredAt: Date | null;
+};
