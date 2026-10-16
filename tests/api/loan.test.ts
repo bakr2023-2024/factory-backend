@@ -62,12 +62,12 @@ describe("GET /loans", () => {
     );
   });
 
-  it("should return all loan given laborerId", async () => {
-    const laborerId = seed.laborers[1].id;
+  it("should return all loan given rateId", async () => {
+    const rateId = seed.rates[1].id;
     const res: PaginatedLoansResponse = await auth().get(
-      `/loans?laborerId=${laborerId}`,
+      `/loans?rateId=${rateId}`,
     );
-    const filtered = seed.loans.filter((r) => r.laborerId === laborerId);
+    const filtered = seed.loans.filter((r) => r.rateId === rateId);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -86,11 +86,13 @@ describe("GET /loans", () => {
     const res: PaginatedLoansResponse = await auth().get(
       `/loans?laborerName=${encodeURIComponent(laborerName)}`,
     );
-    const laborerIds = seed.laborers
-      .filter((c) => c.name === laborerName)
-      .map((c) => c.id);
-    const filtered = seed.loans.filter((r) => laborerIds.includes(r.laborerId));
-
+        const laborerIds = seed.laborers
+          .filter((c) => c.name === laborerName)
+          .map((c) => c.id);
+    const rateIds = seed.rates
+      .filter((r) => laborerIds.includes(r.laborerId))
+      .map((r) => r.id);
+    const filtered = seed.loans.filter((r) => rateIds.includes(r.rateId));
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
@@ -104,14 +106,35 @@ describe("GET /loans", () => {
   });
 
   it("should return all loan given laborerNumber", async () => {
-    const laborerNumber = seed.laborers[1].number!;
+    const laborerNumber = seed.laborers[1].number||"07775000";
     const res: PaginatedLoansResponse = await auth().get(
       `/loans?laborerNumber=${laborerNumber}`,
     );
-    const laborerIds = seed.laborers
+        const laborerIds = seed.laborers
       .filter((c) => c.number === laborerNumber)
       .map((c) => c.id);
-    const filtered = seed.loans.filter((r) => laborerIds.includes(r.laborerId));
+    const rateIds = seed.rates
+      .filter((r) => laborerIds.includes(r.laborerId))
+      .map((r) => r.id);
+    const filtered = seed.loans.filter((r) => rateIds.includes(r.rateId));
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all loan given minAmount and maxAmount", async () => {
+    const minAmount = seed.loans[0].amount
+    const maxAmount = seed.loans[2].amount
+    const res: PaginatedLoansResponse = await auth().get(
+      `/loans?minAmount=${minAmount}&maxAmount=${maxAmount}`,
+    );
+    const filtered = seed.loans.filter((c) => c.amount>=minAmount&&c.amount<=maxAmount);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -124,66 +147,15 @@ describe("GET /loans", () => {
       }),
     );
   });
-  it("should return all loan given seasonId", async () => {
-    const seasonId = seed.seasons[0].id;
+  it("should return all loan given occurredFrom and occurredTo", async () => {
+    const occurredFrom = seed.loans[0].occurredAt;
+    const occurredTo = seed.loans[2].occurredAt;
     const res: PaginatedLoansResponse = await auth().get(
-      `/loans?seasonId=${seasonId}`,
+      `/loans?occurredFrom=${encodeURIComponent(occurredFrom.toISOString())}&occurredTo=${encodeURIComponent(occurredTo.toISOString())}`,
     );
-    const filtered = seed.loans.filter((c) => c.seasonId === seasonId);
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: filtered,
-        page: 1,
-        size: 20,
-        totalPages: Math.ceil(filtered.length / 20),
-        totalCount: filtered.length,
-      }),
+    const filtered = seed.loans.filter(
+      (r) => r.occurredAt >= occurredFrom && r.occurredAt<=occurredTo,
     );
-  });
-  it("should return all loan given loanAmount", async () => {
-    const loanAmount = seed.loans[0].loanAmount;
-    const res: PaginatedLoansResponse = await auth().get(
-      `/loans?loanAmount=${loanAmount}`,
-    );
-    const filtered = seed.loans.filter((c) => c.loanAmount == loanAmount);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: filtered,
-        page: 1,
-        size: 20,
-        totalPages: Math.ceil(filtered.length / 20),
-        totalCount: filtered.length,
-      }),
-    );
-  });
-  it("should return all loan given loanedAt", async () => {
-    const loanedAt = seed.loans[0].loanedAt;
-    const res: PaginatedLoansResponse = await auth().get(
-      `/loans?loanedAt=${encodeURIComponent(loanedAt.toISOString())}`,
-    );
-    const filtered = seed.loans.filter((r) => r.loanedAt >= loanedAt);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(
-      json({
-        data: filtered,
-        page: 1,
-        size: 20,
-        totalPages: Math.ceil(filtered.length / 20),
-        totalCount: filtered.length,
-      }),
-    );
-  });
-
-  it("should return all loan given paymentId", async () => {
-    const paymentId = seed.payments[0].id;
-    const res: PaginatedLoansResponse = await auth().get(
-      `/loans?paymentId=${paymentId}`,
-    );
-    const filtered = seed.loans.filter((r) => r.paymentId == paymentId);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
@@ -199,10 +171,10 @@ describe("GET /loans", () => {
 
   it("should return all loan sorted according to sortBy and order", async () => {
     const res: PaginatedLoansResponse = await auth().get(
-      "/loans?sortBy=loanedAt&order=desc",
+      "/loans?sortBy=occurredAt&order=desc",
     );
     const sorted = seed.loans.toSorted(
-      (a, b) => b.loanedAt.getTime() - a.loanedAt.getTime(),
+      (a, b) => b.occurredAt.getTime() - a.occurredAt.getTime(),
     );
 
     expect(res.status).toBe(200);
@@ -252,9 +224,8 @@ describe("GET /loans/:id", () => {
 describe("POST /loans", () => {
   it("should create loan successfully given valid data", async () => {
     const payload = {
-      laborerId: seed.laborers[0].id,
-      seasonId: seed.seasons[2].id,
-      loanAmount: 300,
+      rateId: seed.rates[1].id,
+      amount: 300,
     };
     const res: LoanResponse = await auth().post("/loans").send(payload);
 
@@ -264,10 +235,9 @@ describe("POST /loans", () => {
 
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth().post("/loans").send({
-      laborerId: -1,
-      seasonId: -1,
-      loanAmount: -300,
-      loanedAt: "bad date",
+      rateId: -1,
+      amount: -300,
+      occurredAt: "bad date",
     });
 
     expect(res.status).toBe(400);
@@ -276,51 +246,44 @@ describe("POST /loans", () => {
       {
         key: "body",
         message: "value can only be a positive integer",
-        path: ["laborerId"],
-      },
-      {
-        key: "body",
-        message: "value can only be a positive integer",
-        path: ["seasonId"],
+        path: ["rateId"],
       },
       {
         key: "body",
         message: "value can only be a positive number",
-        path: ["loanAmount"],
+        path: ["amount"],
       },
       {
         key: "body",
         message: "Invalid DateTime",
-        path: ["loanedAt"],
+        path: ["occurredAt"],
       },
     ]);
   });
 
-  it("should fail if laborer isn't found", async () => {
+  it("should fail if rate isn't found", async () => {
     const res: ErrorResponse = await auth().post("/loans").send({
-      laborerId: 99999999,
-      seasonId: seed.seasons[2].id,
-      loanAmount: 300,
+      rateId: 99999999,
+      amount: 300,
     });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No laborer/season exists with that ID");
+    expect(res.body.message).toBe("No rate exists with that ID");
   });
-  it("should fail if season isn't found", async () => {
+    it("should fail if rateId belongs to a paid rate", async () => {
     const res: ErrorResponse = await auth().post("/loans").send({
-      laborerId: seed.laborers[0].id,
-      seasonId: 99999999,
-      loanAmount: 300,
+      rateId: seed.rates[2].id,
+      amount: 300,
     });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No laborer/season exists with that ID");
+    expect(res.body.message).toBe("can't change attendance, loan, loanPayment or payment of a paid rate");
   });
 });
 
 describe("PATCH /loans/:id", () => {
   it("should correctly update field(s) given id and field(s) to change", async () => {
-    const loan = seed.loans[0];
+    const loan = seed.loans[2];
     const res: LoanResponse = await auth()
       .patch(`/loans/${loan.id}`)
       .send({ notes: "Updated notes" });
@@ -361,8 +324,8 @@ describe("PATCH /loans/:id", () => {
 
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/loans/${seed.loans[0].id}`)
-      .send({ laborerId: -1, loanAmount: -300 });
+      .patch(`/loans/${seed.loans[2].id}`)
+      .send({ rateId: -1, amount: -300 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -370,55 +333,61 @@ describe("PATCH /loans/:id", () => {
       {
         key: "body",
         message: "value can only be a positive integer",
-        path: ["laborerId"],
+        path: ["rateId"],
       },
       {
         key: "body",
         message: "value can only be a positive number",
-        path: ["loanAmount"],
+        path: ["amount"],
       },
     ]);
   });
 
-  it("should fail if laborer isn't found", async () => {
+  it("should fail if rate isn't found", async () => {
     const res: ErrorResponse = await auth()
-      .patch(`/loans/${seed.loans[0].id}`)
-      .send({ laborerId: 99999999 });
+      .patch(`/loans/${seed.loans[2].id}`)
+      .send({ rateId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No laborer/season exists with that ID");
+    expect(res.body.message).toBe("No rate exists with that ID");
   });
-  it("should fail if season isn't found", async () => {
+  it("should fail if current rateId belongs to a paid rate", async () => {
     const res: ErrorResponse = await auth()
       .patch(`/loans/${seed.loans[0].id}`)
-      .send({ seasonId: 99999999 });
+      .send({
+        amount:300,
+        rateId: seed.rates[1].id,
+      });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No laborer/season exists with that ID");
+    expect(res.body.message).toBe(
+      "can't change attendance, loan, loanPayment or payment of a paid rate",
+    );
+  });
+  it("should fail if new rateId belongs to a paid rate", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/loans/${seed.loans[2].id}`)
+      .send({
+        amount:300,
+        rateId: seed.rates[0].id,
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "can't relate attendance, loan, loanPayment or payment to a paid rate",
+    );
   });
 });
 
 describe("DELETE /loans/:id", () => {
-  let createdLoan: Loan;
-
-  beforeAll(async () => {
-    createdLoan = await prisma.loan.create({
-      data: {
-        laborerId: seed.laborers[0].id,
-        seasonId: seed.seasons[1].id,
-        loanAmount: 300,
-      },
-    });
-  });
 
   it("should delete successfully given valid id", async () => {
-    const id = createdLoan.id;
-    const res: LoanResponse = await auth().delete(`/loans/${id}`);
+    const res: LoanResponse = await auth().delete(`/loans/${seed.loans[3].id}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ data: json(createdLoan) });
+    expect(res.body).toEqual({ data: json(seed.loans[3]) });
 
-    const res2: ErrorResponse = await auth().get(`/loans/${id}`);
+    const res2: ErrorResponse = await auth().get(`/loans/${seed.loans[3].id}`);
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("Loan not found");
@@ -444,6 +413,15 @@ describe("DELETE /loans/:id", () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toBe("Loan not found");
   });
+    it("should fail if current rateId belongs to a paid rate", async () => {
+      const res: ErrorResponse = await auth()
+        .delete(`/loans/${seed.loans[0].id}`)
+  
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe(
+        "can't change attendance, loan, loanPayment or payment of a paid rate",
+      );
+    });
 });
 
 afterAll(async () => {
