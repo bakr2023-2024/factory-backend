@@ -93,66 +93,135 @@ const mockItems = [
   { name: "Fruit Tofu", type: ItemType.PRODUCT },
   { name: "Coffee Tofu", type: ItemType.PRODUCT },
   { name: "Honey Barrel", type: ItemType.MATERIAL },
+  { name: "Spare Item", type: ItemType.PRODUCT }, // free: no variants
 ];
 const mockCustomers = [
   { name: "john cena", number: "07775000" },
   { name: "cm punk", number: "08886000" },
   { name: "brock lesner", number: "09997000" },
+  { name: "new customer", number: "01234567890" }, // free: no children
 ];
 const mockSuppliers = [
   { name: "john cena", number: "07775000" },
   { name: "cm punk", number: "08886000" },
   { name: "brock lesner", number: "09997000" },
+  { name: "new supplier", number: "01234567890" }, // free: no children
 ];
 const mockLaborers = [
   { name: "laborer 1", number: "07775000" },
   { name: "laborer 2", number: "08886000" },
   { name: "laborer 3", number: "09997000" },
+  { name: "laborer 4", number: "06660000" }, // free: no rates
 ];
-// Laborer i has rate i, in season i, and works on production day i.
-const mockRates = [
-  { dailySalary: 600, paymentType: PaymentType.WEEKLY },
-  { dailySalary: 1000, paymentType: PaymentType.MONTHLY },
-  { dailySalary: 2000, paymentType: PaymentType.SEASON_END },
-];
-// Factor and hours per laborer on their production day.
-const mockAttendances = [
-  { factor: 1, leftHour: 17 },
-  { factor: 0.5, leftHour: 12 },
-  { factor: 1, leftHour: 17 },
-];
-// Variants 0 and 2 share unitWeight 5 (different items), and item 0 has two
-// variants, so itemName + unitWeight filters can be told apart from either alone.
-// Variants 0..2 are used by the main rows, variant 3 only by the "free" rows.
+// Variants 0..3 are used. Variant 4 is free (item 0, no children).
 const mockVariants = [
   { itemIdx: 0, unitWeight: 5 },
   { itemIdx: 0, unitWeight: 7 },
   { itemIdx: 1, unitWeight: 5 },
   { itemIdx: 2, unitWeight: 3 },
+  { itemIdx: 0, unitWeight: 9 },
 ];
 const mockSeasons = [
-  { name: "season 1", startDate: new Date("2026-09-24T00:00:00Z") },
-  { name: "season 2", startDate: new Date("2026-10-01T00:00:00Z") },
-  { name: "season 3", startDate: new Date("2026-10-08T00:00:00Z") },
+  {
+    name: "season 1",
+    startDate: new Date("2026-09-24T00:00:00Z"),
+    endDate: new Date("2026-10-01T00:00:00Z"),
+  },
+  {
+    name: "season 2",
+    startDate: new Date("2026-10-01T00:00:00Z"),
+    endDate: new Date("2026-10-08T00:00:00Z"),
+  },
+  {
+    name: "season 3",
+    startDate: new Date("2026-10-08T00:00:00Z"),
+    endDate: new Date("2026-10-15T00:00:00Z"),
+  },
+  {
+    name: "season 4",
+    startDate: new Date("2026-10-15T00:00:00Z"),
+    endDate: new Date("2026-10-22T00:00:00Z"),
+  }, // free: no weeks
 ];
 const mockWeeks = [
-  { startDate: new Date("2026-09-24T00:00:00Z") },
-  { startDate: new Date("2026-10-01T00:00:00Z") },
-  { startDate: new Date("2026-10-08T00:00:00Z") },
+  {
+    seasonIdx: 0,
+    startDate: new Date("2026-09-24T00:00:00Z"),
+    endDate: new Date("2026-10-01T00:00:00Z"),
+  },
+  {
+    seasonIdx: 1,
+    startDate: new Date("2026-10-01T00:00:00Z"),
+    endDate: new Date("2026-10-08T00:00:00Z"),
+  },
+  {
+    seasonIdx: 2,
+    startDate: new Date("2026-10-08T00:00:00Z"),
+    endDate: new Date("2026-10-15T00:00:00Z"),
+  },
+  {
+    seasonIdx: 1,
+    startDate: new Date("2026-10-15T00:00:00Z"),
+    endDate: new Date("2026-10-22T00:00:00Z"),
+  }, // free: no days
 ];
 const mockProductionDays = [
   {
+    weekIdx: 0,
     productionDate: new Date("2026-09-24T00:00:00Z"),
     startedAt: new Date("2026-09-24T08:00:00Z"),
+    endedAt: new Date("2026-09-24T17:00:00Z"),
   },
   {
+    weekIdx: 1,
     productionDate: new Date("2026-10-01T00:00:00Z"),
     startedAt: new Date("2026-10-01T08:00:00Z"),
+    endedAt: new Date("2026-10-01T17:00:00Z"),
   },
   {
+    weekIdx: 2,
     productionDate: new Date("2026-10-08T00:00:00Z"),
     startedAt: new Date("2026-10-08T08:00:00Z"),
+    endedAt: new Date("2026-10-08T17:00:00Z"),
   },
+  {
+    weekIdx: 0,
+    productionDate: new Date("2026-09-25T00:00:00Z"),
+    startedAt: new Date("2026-09-25T08:00:00Z"),
+    endedAt: new Date("2026-09-25T17:00:00Z"),
+  }, // free: no children
+];
+const mockRates = [
+  {
+    laborerIdx: 0,
+    seasonIdx: 0,
+    dailySalary: 600,
+    paymentType: PaymentType.WEEKLY,
+  }, // used, paid
+  {
+    laborerIdx: 1,
+    seasonIdx: 1,
+    dailySalary: 1000,
+    paymentType: PaymentType.MONTHLY,
+  }, // used, unpaid
+  {
+    laborerIdx: 2,
+    seasonIdx: 2,
+    dailySalary: 2000,
+    paymentType: PaymentType.SEASON_END,
+  }, // used, paid
+  {
+    laborerIdx: 0,
+    seasonIdx: 0,
+    dailySalary: 700,
+    paymentType: PaymentType.WEEKLY,
+  }, // free, no children
+  {
+    laborerIdx: 1,
+    seasonIdx: 1,
+    dailySalary: 500,
+    paymentType: PaymentType.MONTHLY,
+  }, // free, paid by payment 2
 ];
 
 export type MockData = {
@@ -192,7 +261,6 @@ export const populateDatabase = async (): Promise<MockData> => {
   const seasons: Season[] = await prisma.season.createManyAndReturn({
     data: mockSeasons,
   });
-
   const customers: Customer[] = await prisma.customer.createManyAndReturn({
     data: mockCustomers,
   });
@@ -209,27 +277,37 @@ export const populateDatabase = async (): Promise<MockData> => {
     })),
   });
   const weeks: Week[] = await prisma.week.createManyAndReturn({
-    data: seasons.map((s, idx) => ({ ...mockWeeks[idx], seasonId: s.id })),
+    data: mockWeeks.map((w) => ({
+      startDate: w.startDate,
+      endDate: w.endDate,
+      seasonId: seasons[w.seasonIdx].id,
+    })),
   });
   const productionDays: ProductionDay[] =
     await prisma.productionDay.createManyAndReturn({
-      data: weeks.map((w, idx) => ({
-        ...mockProductionDays[idx],
-        weekId: w.id,
+      data: mockProductionDays.map((d) => ({
+        productionDate: d.productionDate,
+        startedAt: d.startedAt,
+        endedAt: d.endedAt,
+        weekId: weeks[d.weekIdx].id,
       })),
     });
+
+  // Entries 0..3 are used (entry 3 has batch 3). Entry 4 is free (no batch).
   const productionEntries: ProductionEntry[] =
     await prisma.productionEntry.createManyAndReturn({
-      data: productionDays.map((d, idx) => ({
-        variantId: variants[idx].id,
-        productionDayId: d.id,
-      })),
+      data: [
+        { productionDayId: productionDays[0].id, variantId: variants[0].id },
+        { productionDayId: productionDays[1].id, variantId: variants[1].id },
+        { productionDayId: productionDays[2].id, variantId: variants[2].id },
+        { productionDayId: productionDays[0].id, variantId: variants[3].id },
+        { productionDayId: productionDays[1].id, variantId: variants[3].id },
+      ],
     });
-  // batches and consumptions are dated ON their production day
-  // (09:00+idx for batches, 10:00+idx for consumptions)
+  // Batches 0..2 are used by the rows above. Batch 3 is free.
   const productionBatches: ProductionBatch[] =
     await prisma.productionBatch.createManyAndReturn({
-      data: productionEntries.map((e, idx) => ({
+      data: productionEntries.slice(0, 4).map((e, idx) => ({
         quantity: 20 * (idx + 1),
         productionEntryId: e.id,
         occurredAt: new Date(
@@ -251,24 +329,55 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+
+  // Imports 0..2 are used. Import 3 is free (supplier 1, no items).
   const imports: Import[] = await prisma.import.createManyAndReturn({
-    data: suppliers.map((s, idx) => ({
-      supplierId: s.id,
-      productionDayId: productionDays[idx].id,
-      occurredAt: at(idx),
-    })),
+    data: [
+      {
+        supplierId: suppliers[0].id,
+        productionDayId: productionDays[0].id,
+        occurredAt: at(0),
+      },
+      {
+        supplierId: suppliers[1].id,
+        productionDayId: productionDays[1].id,
+        occurredAt: at(1),
+      },
+      {
+        supplierId: suppliers[2].id,
+        productionDayId: productionDays[2].id,
+        occurredAt: at(2),
+      },
+      {
+        supplierId: suppliers[1].id,
+        productionDayId: productionDays[1].id,
+        occurredAt: onDay(productionDays[1], 9),
+      },
+    ],
   });
-  // importItems[0..2] are returned by supplierReturnItems below;
-  // importItems[3..4] are left free for POST tests
+  // ImportItems 0..2 are returned by supplier return items 0..2.
+  // ImportItems 3 and 4 are free. ImportItem 5 is returned by supplier return item 3.
   const importItems: ImportItem[] = await prisma.importItem.createManyAndReturn(
     {
       data: [
-        ...imports.map((i, idx) => ({
-          importId: i.id,
-          variantId: variants[idx].id,
-          quantity: (idx + 1) * 10,
-          unitPrice: (idx + 1) * 2,
-        })),
+        {
+          importId: imports[0].id,
+          variantId: variants[0].id,
+          quantity: 10,
+          unitPrice: 2,
+        },
+        {
+          importId: imports[1].id,
+          variantId: variants[1].id,
+          quantity: 20,
+          unitPrice: 4,
+        },
+        {
+          importId: imports[2].id,
+          variantId: variants[2].id,
+          quantity: 30,
+          unitPrice: 6,
+        },
         {
           importId: imports[0].id,
           variantId: variants[3].id,
@@ -280,6 +389,12 @@ export const populateDatabase = async (): Promise<MockData> => {
           variantId: variants[3].id,
           quantity: 6,
           unitPrice: 10,
+        },
+        {
+          importId: imports[2].id,
+          variantId: variants[3].id,
+          quantity: 3,
+          unitPrice: 5,
         },
       ],
     },
@@ -296,24 +411,55 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+
+  // Exports 0..2 are used. Export 3 is free (customer 1, no items).
   const exports: Export[] = await prisma.export.createManyAndReturn({
-    data: customers.map((c, idx) => ({
-      customerId: c.id,
-      productionDayId: productionDays[idx].id,
-      occurredAt: at(idx + 3),
-    })),
+    data: [
+      {
+        customerId: customers[0].id,
+        productionDayId: productionDays[0].id,
+        occurredAt: at(3),
+      },
+      {
+        customerId: customers[1].id,
+        productionDayId: productionDays[1].id,
+        occurredAt: at(4),
+      },
+      {
+        customerId: customers[2].id,
+        productionDayId: productionDays[2].id,
+        occurredAt: at(5),
+      },
+      {
+        customerId: customers[1].id,
+        productionDayId: productionDays[1].id,
+        occurredAt: onDay(productionDays[1], 9),
+      },
+    ],
   });
-  // exportItems[0..2] are returned by customerReturnItems below;
-  // exportItems[3..4] are left free for POST tests
+  // ExportItems 0..2 are returned by customer return items 0..2.
+  // ExportItems 3 and 4 are free. ExportItem 5 is returned by customer return item 3.
   const exportItems: ExportItem[] = await prisma.exportItem.createManyAndReturn(
     {
       data: [
-        ...exports.map((e, idx) => ({
-          exportId: e.id,
-          variantId: variants[idx].id,
-          quantity: (idx + 1) * 10,
-          unitPrice: (idx + 1) * 3,
-        })),
+        {
+          exportId: exports[0].id,
+          variantId: variants[0].id,
+          quantity: 10,
+          unitPrice: 3,
+        },
+        {
+          exportId: exports[1].id,
+          variantId: variants[1].id,
+          quantity: 20,
+          unitPrice: 6,
+        },
+        {
+          exportId: exports[2].id,
+          variantId: variants[2].id,
+          quantity: 30,
+          unitPrice: 9,
+        },
         {
           exportId: exports[0].id,
           variantId: variants[3].id,
@@ -325,6 +471,12 @@ export const populateDatabase = async (): Promise<MockData> => {
           variantId: variants[3].id,
           quantity: 7,
           unitPrice: 15,
+        },
+        {
+          exportId: exports[2].id,
+          variantId: variants[3].id,
+          quantity: 3,
+          unitPrice: 9,
         },
       ],
     },
@@ -341,22 +493,63 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+
+  // Customer returns 0..2 are used. Return 3 is free (customer 2, no items).
   const customerReturns: CustomerReturn[] =
     await prisma.customerReturn.createManyAndReturn({
-      data: customers.map((c, idx) => ({
-        customerId: c.id,
-        productionDayId: productionDays[idx].id,
-        occurredAt: at(idx + 6),
-      })),
+      data: [
+        {
+          customerId: customers[0].id,
+          productionDayId: productionDays[0].id,
+          occurredAt: at(6),
+        },
+        {
+          customerId: customers[1].id,
+          productionDayId: productionDays[1].id,
+          occurredAt: at(7),
+        },
+        {
+          customerId: customers[2].id,
+          productionDayId: productionDays[2].id,
+          occurredAt: at(8),
+        },
+        {
+          customerId: customers[2].id,
+          productionDayId: productionDays[2].id,
+          occurredAt: onDay(productionDays[2], 9),
+        },
+      ],
     });
+  // Return items 0..2 point at export items 0..2. Return item 3 points at
+  // export item 5, on customer return 2 (the same customer as export 2).
   const customerReturnItems: CustomerReturnItem[] =
     await prisma.customerReturnItem.createManyAndReturn({
-      data: customerReturns.map((r, idx) => ({
-        customerReturnId: r.id,
-        exportItemId: exportItems[idx].id,
-        quantity: 3 * (idx + 1),
-        unitPrice: (idx + 1) * 1.5,
-      })),
+      data: [
+        {
+          customerReturnId: customerReturns[0].id,
+          exportItemId: exportItems[0].id,
+          quantity: 3,
+          unitPrice: 1.5,
+        },
+        {
+          customerReturnId: customerReturns[1].id,
+          exportItemId: exportItems[1].id,
+          quantity: 6,
+          unitPrice: 3,
+        },
+        {
+          customerReturnId: customerReturns[2].id,
+          exportItemId: exportItems[2].id,
+          quantity: 9,
+          unitPrice: 4.5,
+        },
+        {
+          customerReturnId: customerReturns[2].id,
+          exportItemId: exportItems[5].id,
+          quantity: 2,
+          unitPrice: 3,
+        },
+      ],
     });
   stockMovements.push(
     ...(await prisma.stockMovement.createManyAndReturn({
@@ -374,22 +567,63 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+
+  // Supplier returns 0..2 are used. Return 3 is free (supplier 2, no items).
   const supplierReturns: SupplierReturn[] =
     await prisma.supplierReturn.createManyAndReturn({
-      data: suppliers.map((s, idx) => ({
-        supplierId: s.id,
-        productionDayId: productionDays[idx].id,
-        occurredAt: at(idx + 9),
-      })),
+      data: [
+        {
+          supplierId: suppliers[0].id,
+          productionDayId: productionDays[0].id,
+          occurredAt: at(9),
+        },
+        {
+          supplierId: suppliers[1].id,
+          productionDayId: productionDays[1].id,
+          occurredAt: at(10),
+        },
+        {
+          supplierId: suppliers[2].id,
+          productionDayId: productionDays[2].id,
+          occurredAt: at(11),
+        },
+        {
+          supplierId: suppliers[2].id,
+          productionDayId: productionDays[2].id,
+          occurredAt: onDay(productionDays[2], 9),
+        },
+      ],
     });
+  // Return items 0..2 point at import items 0..2. Return item 3 points at
+  // import item 5, on supplier return 2 (the same supplier as import 2).
   const supplierReturnItems: SupplierReturnItem[] =
     await prisma.supplierReturnItem.createManyAndReturn({
-      data: supplierReturns.map((r, idx) => ({
-        supplierReturnId: r.id,
-        importItemId: importItems[idx].id,
-        quantity: 2 * (idx + 1),
-        unitPrice: (idx + 1) * 1.5,
-      })),
+      data: [
+        {
+          supplierReturnId: supplierReturns[0].id,
+          importItemId: importItems[0].id,
+          quantity: 2,
+          unitPrice: 1.5,
+        },
+        {
+          supplierReturnId: supplierReturns[1].id,
+          importItemId: importItems[1].id,
+          quantity: 4,
+          unitPrice: 3,
+        },
+        {
+          supplierReturnId: supplierReturns[2].id,
+          importItemId: importItems[2].id,
+          quantity: 6,
+          unitPrice: 4.5,
+        },
+        {
+          supplierReturnId: supplierReturns[2].id,
+          importItemId: importItems[5].id,
+          quantity: 2,
+          unitPrice: 3,
+        },
+      ],
     });
   stockMovements.push(
     ...(await prisma.stockMovement.createManyAndReturn({
@@ -407,14 +641,24 @@ export const populateDatabase = async (): Promise<MockData> => {
       })),
     })),
   );
+
+  // Consumptions 0..2 are dated on days 0..2. Consumption 3 is free (day 1, variant 3).
   const consumptions: Consumption[] =
     await prisma.consumption.createManyAndReturn({
-      data: productionDays.map((d, idx) => ({
-        productionDayId: d.id,
-        variantId: variants[idx].id,
-        quantity: 5 * (idx + 1),
-        occurredAt: new Date(d.productionDate.getTime() + (10 + idx) * HOUR),
-      })),
+      data: [
+        ...productionDays.slice(0, 3).map((d, idx) => ({
+          productionDayId: d.id,
+          variantId: variants[idx].id,
+          quantity: 5 * (idx + 1),
+          occurredAt: new Date(d.productionDate.getTime() + (10 + idx) * HOUR),
+        })),
+        {
+          productionDayId: productionDays[1].id,
+          variantId: variants[3].id,
+          quantity: 4,
+          occurredAt: onDay(productionDays[1], 11),
+        },
+      ],
     });
   stockMovements.push(
     ...(await prisma.stockMovement.createManyAndReturn({
@@ -431,30 +675,108 @@ export const populateDatabase = async (): Promise<MockData> => {
 
   // ---------- laborers ----------
   const rates: Rate[] = await prisma.rate.createManyAndReturn({
-    data: laborers.map((l, idx) => ({
-      laborerId: l.id,
-      seasonId: seasons[idx].id,
-      dailySalary: mockRates[idx].dailySalary,
-      paymentType: mockRates[idx].paymentType,
-      from: seasons[idx].startDate,
-      to: null,
+    data: mockRates.map((r) => ({
+      laborerId: laborers[r.laborerIdx].id,
+      seasonId: seasons[r.seasonIdx].id,
+      dailySalary: r.dailySalary,
+      paymentType: r.paymentType,
+      from: seasons[r.seasonIdx].startDate,
+      to: seasons[r.seasonIdx].endDate,
     })),
   });
+
+  // Attendances 0 and 1 belong to paid rates (locked). 2 and 3 are free (rate 1, unpaid).
   const attendances: Attendance[] = await prisma.attendance.createManyAndReturn(
     {
-      data: laborers.map((l, idx) => ({
-        laborerId: l.id,
-        productionDayId: productionDays[idx].id,
-        cameAt: onDay(productionDays[idx], 8),
-        leftAt: onDay(productionDays[idx], mockAttendances[idx].leftHour),
-        factor: mockAttendances[idx].factor,
-      })),
+      data: [
+        {
+          rateId: rates[0].id,
+          productionDayId: productionDays[0].id,
+          cameAt: onDay(productionDays[0], 8),
+          leftAt: onDay(productionDays[0], 17),
+          factor: 1,
+        },
+        {
+          rateId: rates[2].id,
+          productionDayId: productionDays[2].id,
+          cameAt: onDay(productionDays[2], 8),
+          leftAt: onDay(productionDays[2], 17),
+          factor: 1,
+        },
+        {
+          rateId: rates[1].id,
+          productionDayId: productionDays[1].id,
+          cameAt: onDay(productionDays[1], 8),
+          leftAt: onDay(productionDays[1], 12),
+          factor: 0.5,
+        },
+        {
+          rateId: rates[1].id,
+          productionDayId: productionDays[0].id,
+          cameAt: onDay(productionDays[0], 13),
+          leftAt: onDay(productionDays[0], 17),
+          factor: 0.5,
+        },
+      ],
     },
   );
-  // Gross = sum of factors x dailySalary. Net = gross - loans + loanPayments.
-  // Payment 0: gross 1 x 600 = 600, loans 300, loanPayments 100 => net 400.
-  // Payment 1: gross 1 x 2000 = 2000, loans 1000, loanPayments 0 => net 1000.
-  // Laborer 1 has no payment yet (their 0.5 x 1000 is still pending).
+
+  // Loans 0 and 1 belong to paid rates (locked). 2 and 3 are free (rate 1).
+  const loans: Loan[] = await prisma.loan.createManyAndReturn({
+    data: [
+      {
+        rateId: rates[0].id,
+        amount: 300,
+        occurredAt: onDay(productionDays[0], 7),
+      },
+      {
+        rateId: rates[2].id,
+        amount: 1000,
+        occurredAt: onDay(productionDays[2], 7),
+      },
+      {
+        rateId: rates[1].id,
+        amount: 300,
+        occurredAt: onDay(productionDays[1], 7),
+      },
+      {
+        rateId: rates[1].id,
+        amount: 200,
+        occurredAt: onDay(productionDays[1], 8),
+      },
+    ],
+  });
+
+  // Loan payments 0 and 1 belong to a paid rate (locked, totalling 100).
+  // 2 and 3 are free (rate 1).
+  const loanPayments: LoanPayment[] =
+    await prisma.loanPayment.createManyAndReturn({
+      data: [
+        {
+          rateId: rates[0].id,
+          amount: 60,
+          occurredAt: onDay(productionDays[0], 17),
+        },
+        {
+          rateId: rates[0].id,
+          amount: 40,
+          occurredAt: onDay(productionDays[0], 16),
+        },
+        {
+          rateId: rates[1].id,
+          amount: 30,
+          occurredAt: onDay(productionDays[1], 16),
+        },
+        {
+          rateId: rates[1].id,
+          amount: 20,
+          occurredAt: onDay(productionDays[1], 15),
+        },
+      ],
+    });
+
+  // Payments 0 and 1 are used. Payment 2 is free: it can be deleted, since
+  // nothing references it, and it locks rate 4 only.
   const payments: Payment[] = await prisma.payment.createManyAndReturn({
     data: [
       {
@@ -463,7 +785,7 @@ export const populateDatabase = async (): Promise<MockData> => {
         loans: 300,
         loanPayments: 100,
         net: 400,
-        paidAt: onDay(productionDays[0], 18),
+        occurredAt: onDay(productionDays[0], 18),
       },
       {
         rateId: rates[2].id,
@@ -471,54 +793,18 @@ export const populateDatabase = async (): Promise<MockData> => {
         loans: 1000,
         loanPayments: 0,
         net: 1000,
-        paidAt: onDay(productionDays[2], 18),
+        occurredAt: onDay(productionDays[2], 18),
+      },
+      {
+        rateId: rates[4].id,
+        gross: 0,
+        loans: 0,
+        loanPayments: 0,
+        net: 0,
+        occurredAt: onDay(productionDays[1], 18),
       },
     ],
   });
-  // loan 0 and loan 2 were deducted in payments 0 and 1; loan 1 is still open
-  const loans: Loan[] = await prisma.loan.createManyAndReturn({
-    data: [
-      {
-        laborerId: laborers[0].id,
-        seasonId: seasons[0].id,
-        loanAmount: 300,
-        loanedAt: onDay(productionDays[0], 7),
-        paymentId: payments[0].id,
-      },
-      {
-        laborerId: laborers[1].id,
-        seasonId: seasons[1].id,
-        loanAmount: 500,
-        loanedAt: onDay(productionDays[1], 7),
-        paymentId: null,
-      },
-      {
-        laborerId: laborers[2].id,
-        seasonId: seasons[2].id,
-        loanAmount: 1000,
-        loanedAt: onDay(productionDays[2], 7),
-        paymentId: payments[1].id,
-      },
-    ],
-  });
-  // loanPayment 0 was deducted in payment 0; loanPayment 1 is free for POST tests
-  const loanPayments: LoanPayment[] =
-    await prisma.loanPayment.createManyAndReturn({
-      data: [
-        {
-          loanId: loans[0].id,
-          paymentId: payments[0].id,
-          amount: 100,
-          repaidAt: onDay(productionDays[0], 17),
-        },
-        {
-          loanId: loans[1].id,
-          paymentId: null,
-          amount: 50,
-          repaidAt: onDay(productionDays[1], 16),
-        },
-      ],
-    });
 
   return {
     items,
