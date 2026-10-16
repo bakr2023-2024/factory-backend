@@ -1,158 +1,58 @@
 import { Prisma, StockMovementType } from "../db/generated/prisma/client";
-import { paginateConsumptionsDTO } from "../modules/consumption/consumption.validation";
-import { paginateCustomersDTO } from "../modules/customer/customer.validation";
-import { paginateCustomerReturnsDTO } from "../modules/customerReturn/customerReturn.validation";
-import { paginateCustomerReturnItemsDTO } from "../modules/customerReturnItem/customerReturnItem.validation";
-import { paginateExportsDTO } from "../modules/export/export.validation";
-import { paginateExportItemsDTO } from "../modules/exportItem/exportItem.validation";
-import { paginateImportsDTO } from "../modules/import/import.validation";
-import { paginateImportItemsDTO } from "../modules/importItem/importItem.validation";
-import { paginateItemsDTO } from "../modules/item/item.validation";
-import { paginateProductionBatchesDTO } from "../modules/productionBatch/productionBatch.validation";
-import { paginateProductionDaysDTO } from "../modules/productionDay/productionDay.validation";
-import { paginateProductionEntriesDTO } from "../modules/productionEntry/productionEntry.validation";
-import { paginateSeasonsDTO } from "../modules/season/season.validation";
-import { paginateStockMovementsDTO } from "../modules/stockMovement/stockMovement.validation";
-import { paginateSuppliersDTO } from "../modules/supplier/supplier.validation";
-import { paginateSupplierReturnsDTO } from "../modules/supplierReturn/supplierReturn.validation";
-import { paginateSupplierReturnItemsDTO } from "../modules/supplierReturnItem/supplierReturnItem.validation";
-import { paginateVariantsDTO } from "../modules/variant/variant.validation";
-import { paginateWeeksDTO } from "../modules/week/week.validation";
 import { StockMovementCreateInput } from "../db/generated/prisma/models";
-import { paginateAttendancesDTO } from "../modules/attendance/attendance.validation";
-import { paginateLaborersDTO } from "../modules/laborer/laborer.validation";
-import { paginateLoansDTO } from "../modules/loan/loan.validation";
-import { paginateLoanPaymentsDTO } from "../modules/loanPayment/loanPayment.validation";
-import { paginatePaymentsDTO } from "../modules/payment/payment.validation";
-import { paginateRatesDTO } from "../modules/rate/rate.validation";
+import { ConflictException } from "./exceptions";
 
-type Query =
-  | Prisma.ItemFindManyArgs
-  | Prisma.VariantFindManyArgs
-  | Prisma.SupplierFindManyArgs
-  | Prisma.CustomerFindManyArgs
-  | Prisma.ImportFindManyArgs
-  | Prisma.ExportFindManyArgs
-  | Prisma.ImportItemFindManyArgs
-  | Prisma.ExportItemFindManyArgs
-  | Prisma.SeasonFindManyArgs
-  | Prisma.WeekFindManyArgs
-  | Prisma.ProductionDayFindManyArgs
-  | Prisma.ProductionEntryFindManyArgs
-  | Prisma.ProductionBatchFindManyArgs
-  | Prisma.ConsumptionFindManyArgs
-  | Prisma.CustomerReturnFindManyArgs
-  | Prisma.CustomerReturnItemFindManyArgs
-  | Prisma.SupplierReturnFindManyArgs
-  | Prisma.SupplierReturnItemFindManyArgs
-  | Prisma.StockMovementFindManyArgs
-  | Prisma.LaborerFindManyArgs
-  | Prisma.RateFindManyArgs
-  | Prisma.AttendanceFindManyArgs
-  | Prisma.LoanFindManyArgs
-  | Prisma.LoanPaymentFindManyArgs
-  | Prisma.PaymentFindManyArgs;
+type Pagination = {
+  page: number;
+  size: number;
+  order: "asc" | "desc";
+  createdFrom?: string | undefined;
+  createdTo?: string | undefined;
+  sortBy?: string | undefined;
+};
 
-type Where =
-  | Prisma.ItemWhereInput
-  | Prisma.VariantWhereInput
-  | Prisma.SupplierWhereInput
-  | Prisma.CustomerWhereInput
-  | Prisma.ImportWhereInput
-  | Prisma.ExportWhereInput
-  | Prisma.ImportItemWhereInput
-  | Prisma.ExportItemWhereInput
-  | Prisma.SeasonWhereInput
-  | Prisma.WeekWhereInput
-  | Prisma.ProductionDayWhereInput
-  | Prisma.ProductionEntryWhereInput
-  | Prisma.ProductionBatchWhereInput
-  | Prisma.ConsumptionWhereInput
-  | Prisma.CustomerReturnWhereInput
-  | Prisma.CustomerReturnItemWhereInput
-  | Prisma.SupplierReturnWhereInput
-  | Prisma.SupplierReturnItemWhereInput
-  | Prisma.StockMovementWhereInput
-  | Prisma.LaborerWhereInput
-  | Prisma.RateWhereInput
-  | Prisma.AttendanceWhereInput
-  | Prisma.LoanWhereInput
-  | Prisma.LoanPaymentWhereInput
-  | Prisma.PaymentWhereInput;
-
-type OrderBy =
-  | Prisma.ItemOrderByWithRelationInput
-  | Prisma.VariantOrderByWithRelationInput
-  | Prisma.SupplierOrderByWithRelationInput
-  | Prisma.CustomerOrderByWithRelationInput
-  | Prisma.ImportOrderByWithRelationInput
-  | Prisma.ExportOrderByWithRelationInput
-  | Prisma.ImportItemOrderByWithRelationInput
-  | Prisma.ExportItemOrderByWithRelationInput
-  | Prisma.SeasonOrderByWithRelationInput
-  | Prisma.WeekOrderByWithRelationInput
-  | Prisma.ProductionDayOrderByWithRelationInput
-  | Prisma.ProductionEntryOrderByWithRelationInput
-  | Prisma.ProductionBatchOrderByWithRelationInput
-  | Prisma.ConsumptionOrderByWithRelationInput
-  | Prisma.CustomerReturnOrderByWithRelationInput
-  | Prisma.CustomerReturnItemOrderByWithRelationInput
-  | Prisma.SupplierReturnOrderByWithRelationInput
-  | Prisma.SupplierReturnItemOrderByWithRelationInput
-  | Prisma.StockMovementOrderByWithRelationInput
-  | Prisma.LaborerOrderByWithRelationInput
-  | Prisma.RateOrderByWithRelationInput
-  | Prisma.AttendanceOrderByWithRelationInput
-  | Prisma.LoanOrderByWithRelationInput
-  | Prisma.LoanPaymentOrderByWithRelationInput
-  | Prisma.PaymentOrderByWithRelationInput;
-
-type Pagination =
-  | paginateItemsDTO
-  | paginateVariantsDTO
-  | paginateSuppliersDTO
-  | paginateCustomersDTO
-  | paginateImportsDTO
-  | paginateExportsDTO
-  | paginateImportItemsDTO
-  | paginateExportItemsDTO
-  | paginateSeasonsDTO
-  | paginateWeeksDTO
-  | paginateProductionDaysDTO
-  | paginateProductionEntriesDTO
-  | paginateProductionBatchesDTO
-  | paginateConsumptionsDTO
-  | paginateCustomerReturnsDTO
-  | paginateCustomerReturnItemsDTO
-  | paginateSupplierReturnsDTO
-  | paginateSupplierReturnItemsDTO
-  | paginateStockMovementsDTO
-  | paginateLaborersDTO
-  | paginateRatesDTO
-  | paginateAttendancesDTO
-  | paginateLoansDTO
-  | paginateLoanPaymentsDTO
-  | paginatePaymentsDTO;
-
-export const buildQuery = (
-  pagination: Pagination,
-  query: Query,
-  where: Where,
-  orderBy: OrderBy,
+export type FilterRuleOptions = "contains" | "lte" | "gte" | "equal";
+export type FilterRule<T> = {
+  path: string[];
+  param: keyof T;
+  op?: FilterRuleOptions;
+};
+const buildOption = (val: unknown, op: FilterRuleOptions = "equal") => {
+  if (op == "contains") return { contains: val, mode: "insensitive" };
+  else if (op == "gte") return { gte: val };
+  else if (op == "lte") return { lte: val };
+  else return val;
+};
+const isObj = (obj: unknown): obj is Record<string, unknown> =>
+  obj !== null && typeof obj == "object" && !Array.isArray(obj);
+const deepMerge = (obj1: object, obj2: object) => {
+  if (!isObj(obj1) || !isObj(obj2)) return obj2;
+  for (const key in obj2)
+    obj1[key] = deepMerge(obj1[key] as object, obj2[key] as object);
+  return obj1;
+};
+export const buildQuery = <T extends Pagination>(
+  rules: FilterRule<T>[],
+  pagination: T,
 ) => {
   const { page, size } = pagination;
-  const createdAt: Prisma.DateTimeFilter = {};
+  const objects = rules
+    .filter((rule) => pagination[rule.param] !== undefined)
+    .map((rule) =>
+      rule.path.reduceRight(
+        (acc, field) => ({ [field]: acc }),
+        buildOption(pagination[rule.param], rule.op),
+      ),
+    ) as object[];
 
-  if (pagination.sortBy)
-    orderBy[pagination.sortBy as keyof OrderBy] = pagination.order;
-  if (pagination.createdFrom) createdAt.gte = pagination.createdFrom;
-  if (pagination.createdTo) createdAt.lte = pagination.createdTo;
-  if (pagination.createdFrom || pagination.createdTo)
-    where.createdAt = createdAt;
-  query.skip = (page - 1) * pagination.size;
-  query.take = size;
-  query.where = where;
-  query.orderBy = orderBy;
+  return {
+    where: objects.reduce((acc, obj) => deepMerge(acc, obj), {}),
+    skip: (page - 1) * size,
+    take: size,
+    orderBy: pagination.sortBy
+      ? { [pagination.sortBy]: pagination.order }
+      : undefined,
+  };
 };
 export const createStockMovement = async (
   tx: Prisma.TransactionClient,
@@ -201,4 +101,22 @@ export const deleteStockMovement = async (
     where: { id: stockMovement.variantId },
     data: { currentStock: { decrement: stockMovement.quantityChanged } },
   });
+};
+
+export const throwIfPaidRate = async (
+  tx: Prisma.TransactionClient,
+  currentRateId: number,
+  newRateId?: number,
+) => {
+  if (await tx.payment.findUnique({ where: { rateId: currentRateId } }))
+    throw new ConflictException(
+      "can't change attendance, loan, loanPayment or payment of a paid rate",
+    );
+  if (
+    newRateId !== undefined &&
+    (await tx.payment.findUnique({ where: { rateId: newRateId } }))
+  )
+    throw new ConflictException(
+      "can't relate attendance, loan, loanPayment or payment to a paid rate",
+    );
 };
