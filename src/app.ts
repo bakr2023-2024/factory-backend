@@ -31,6 +31,7 @@ import attendanceRouter from "./modules/attendance/attendance.route";
 import loanRouter from "./modules/loan/loan.route";
 import loanPaymentRouter from "./modules/loanPayment/loanPayment.route";
 import paymentRouter from "./modules/payment/payment.route";
+import expenseRouter from "./modules/expense/expense.route";
 import { ErrorDetail } from "./utils/types/types";
 import { authentication } from "./middleware/auth.middleware";
 const app = express();
@@ -62,6 +63,7 @@ app.use("/attendances", authentication, attendanceRouter);
 app.use("/loans", authentication, loanRouter);
 app.use("/loanPayments", authentication, loanPaymentRouter);
 app.use("/payments", authentication, paymentRouter);
+app.use("/expenses", authentication, expenseRouter);
 app.get("/", (req: Request, res: Response) =>
   res.json({ message: "Welcome to factory backend" }),
 );
