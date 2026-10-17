@@ -52,7 +52,7 @@ export const createProductionBatch = async (
 ): Promise<ProductionBatch> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const productionBatch = await prisma.productionBatch.create({
+      const productionBatch = await tx.productionBatch.create({
         data: body,
         include: { productionEntry: true },
       });
@@ -81,7 +81,7 @@ export const updateProductionBatch = async (
 ): Promise<ProductionBatch> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const productionBatch = await prisma.productionBatch.update({
+      const productionBatch = await tx.productionBatch.update({
         where: { id: params.id },
         data: body,
       });
@@ -109,7 +109,7 @@ export const deleteProductionBatch = async (
 ): Promise<ProductionBatch> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const productionBatch = await prisma.productionBatch.delete({
+      const productionBatch = await tx.productionBatch.delete({
         where: { id: params.id },
       });
       await deleteStockMovement(

@@ -79,7 +79,7 @@ export const updateConsumption = async (
 ): Promise<Consumption> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const consumption = await prisma.consumption.update({
+      const consumption = await tx.consumption.update({
         where: { id: params.id },
         data: body,
       });
@@ -109,7 +109,7 @@ export const deleteConsumption = async (
 ): Promise<Consumption> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const consumption = await prisma.consumption.delete({
+      const consumption = await tx.consumption.delete({
         where: { id: params.id },
       });
       await deleteStockMovement(
