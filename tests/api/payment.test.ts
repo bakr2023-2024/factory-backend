@@ -79,7 +79,52 @@ describe("GET /payments", () => {
       }),
     );
   });
+  it("should return all exports given productionDayId", async () => {
+    const productionDayId = seed.productionDays[0].id;
+    const res: PaginatedPaymentsResponse = await auth().get(
+      `/payments?productionDayId=${productionDayId}`,
+    );
+    const filtered = seed.payments.filter(
+      (c) => c.productionDayId === productionDayId,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all exports given productionDate", async () => {
+    const productionDate = seed.productionDays[0].productionDate
+      .toISOString()
+      .slice(0, 10);
+    const res: PaginatedPaymentsResponse = await auth().get(
+      `/payments?productionDate=${productionDate}`,
+    );
+    const dayIds = seed.productionDays
+      .filter(
+        (d) => d.productionDate.toISOString().slice(0, 10) === productionDate,
+      )
+      .map((d) => d.id);
+    const filtered = seed.payments.filter((c) =>
+      dayIds.includes(c.productionDayId),
+    );
 
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all payment given laborerName", async () => {
     const laborerName = seed.laborers[0].name;
     const res: PaginatedPaymentsResponse = await auth().get(
@@ -249,9 +294,10 @@ describe("GET /payments/:id", () => {
 });
 
 describe("POST /payments", () => {
-  it("should create rate return successfully given valid data", async () => {
+  it("should create payment successfully given valid data", async () => {
     const payload = {
       rateId: seed.rates[1].id,
+      productionDayId: seed.productionDays[0].id,
       gross: 600,
       loans: 200,
       loanPayments: 100,
@@ -266,6 +312,7 @@ describe("POST /payments", () => {
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth().post("/payments").send({
       rateId: -1,
+      productionDayId: -1,
       gross: -1,
       loans: -1,
       loanPayments: -1,
@@ -279,6 +326,11 @@ describe("POST /payments", () => {
         key: "body",
         message: "value can only be a positive integer",
         path: ["rateId"],
+      },
+      {
+        key: "body",
+        message: "value can only be a positive integer",
+        path: ["productionDayId"],
       },
       {
         key: "body",
@@ -308,6 +360,7 @@ describe("POST /payments", () => {
       .post("/payments")
       .send({
         rateId: 99999999,
+        productionDayId: seed.productionDays[0].id,
         gross: 600,
         loans: 200,
         loanPayments: 100,
@@ -315,7 +368,21 @@ describe("POST /payments", () => {
       });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No rate exists with that ID");
+    expect(res.body.message).toBe("No rate/productionDay exists with that ID");
+  });
+  it("should fail if productionDay isn't found", async () => {
+    const res: ErrorResponse = await auth()
+      .post("/payments")
+      .send({
+        rateId: seed.rates[3].id,
+        productionDayId: 99999999,
+        gross: 600,
+        loans: 200,
+        loanPayments: 100,
+        net: 600 - 200 + 100,
+      });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No rate/productionDay exists with that ID");
   });
 });
 

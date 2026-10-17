@@ -49,7 +49,7 @@ export const createLoanPayment = async (
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
-        throw new ConflictException("No rate exists with that ID");
+        throw new ConflictException("No rate/productionDay exists with that ID");
     } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
@@ -74,7 +74,7 @@ export const updateLoanPayment = async (
       if (err.code === "P2025")
         throw new NotFoundException("LoanPayment not found");
       else if (err.code === "P2003")
-        throw new ConflictException("No rate exists with that ID");
+        throw new ConflictException("No rate/productionDay exists with that ID");
     } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }

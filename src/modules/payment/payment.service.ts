@@ -84,7 +84,7 @@ export const createPayment = async (
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
         throw new ConflictException(
-          "No rate exists with that ID",
+          "No rate/productionDay exists with that ID",
         );
     }
     throw new InternalServerException((err as Error).message);

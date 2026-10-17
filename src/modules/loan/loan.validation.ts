@@ -5,6 +5,8 @@ import { FilterRule } from "../../utils/utils";
 export const paginateLoans = {
   query: fields.paginate("Loan").extend({
     rateId: fields.integerParam.optional(),
+    productionDayId:fields.integerParam.optional(),
+    productionDate:fields.date.optional(),
     laborerId: fields.integerParam.optional(),
     laborerName: fields.name.optional(),
     laborerNumber: fields.number.optional(),
@@ -17,6 +19,8 @@ export const paginateLoans = {
 };
 export const loanRules: FilterRule<paginateLoansDTO>[] = [
   { path: ["rateId"], param: "rateId" },
+  {path:['productionDay','productionDate'],param:"productionDate"},
+  {path:['productionDayId'],param:"productionDayId"},
   { path: ["rate", "seasonId"], param: "seasonId" },
   { path: ["rate", "laborerId"], param: "laborerId" },
   { path: ["rate", "laborer", "name"], param: "laborerName", op: "contains" },
@@ -40,6 +44,7 @@ export const getLoan = {
 export const createLoan = {
   body: z.strictObject({
     rateId: fields.integerBody,
+    productionDayId:fields.integerBody,
     amount: fields.doubleBody,
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
@@ -51,6 +56,7 @@ export const updateLoan = {
   }),
   body: z.strictObject({
     rateId: fields.integerBody.optional(),
+    productionDayId:fields.integerBody.optional(),
     amount: fields.doubleBody.optional(),
     occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),

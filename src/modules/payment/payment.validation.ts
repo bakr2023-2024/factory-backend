@@ -5,6 +5,8 @@ import { FilterRule } from "../../utils/utils";
 export const paginatePayments = {
   query: fields.paginate("Payment").extend({
     rateId: fields.integerParam.optional(),
+    productionDayId: fields.integerParam.optional(),
+    productionDate: fields.date.optional(),
     laborerId: fields.integerParam.optional(),
     laborerName: fields.name.optional(),
     laborerNumber: fields.number.optional(),
@@ -23,6 +25,8 @@ export const paginatePayments = {
 };
 export const paymentRules: FilterRule<paginatePaymentsDTO>[] = [
   { path: ["rateId"], param: "rateId" },
+  { path: ["productionDay", "productionDate"], param: "productionDate" },
+  { path: ["productionDayId"], param: "productionDayId" },
   { path: ["rate", "laborerId"], param: "laborerId" },
   { path: ["rate", "laborer", "name"], param: "laborerName", op: "contains" },
   {
@@ -57,6 +61,7 @@ export const getPreview = {
 export const createPayment = {
   body: z.strictObject({
     rateId: fields.integerBody,
+    productionDayId: fields.integerBody,
     gross: fields.doubleBody,
     loans: fields.doubleBody,
     loanPayments: fields.doubleBody,

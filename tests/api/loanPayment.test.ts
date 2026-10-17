@@ -109,12 +109,12 @@ describe("GET /loanPayments", () => {
     const res: PaginatedLoanPaymentsResponse = await auth().get(
       `/loanPayments?laborerName=${encodeURIComponent(laborerName)}`,
     );
-        const laborerIds = seed.laborers
-          .filter((c) => c.name === laborerName)
-          .map((c) => c.id);
-        const rateIds = seed.rates
-          .filter((r) => laborerIds.includes(r.laborerId))
-          .map((r) => r.id);
+    const laborerIds = seed.laborers
+      .filter((c) => c.name === laborerName)
+      .map((c) => c.id);
+    const rateIds = seed.rates
+      .filter((r) => laborerIds.includes(r.laborerId))
+      .map((r) => r.id);
     const filtered = seed.loanPayments.filter((r) =>
       rateIds.includes(r.rateId),
     );
@@ -134,12 +134,12 @@ describe("GET /loanPayments", () => {
     const res: PaginatedLoanPaymentsResponse = await auth().get(
       `/loanPayments?laborerNumber=${encodeURIComponent(laborerNumber)}`,
     );
-        const laborerIds = seed.laborers
-          .filter((c) => c.number === laborerNumber)
-          .map((c) => c.id);
-        const rateIds = seed.rates
-          .filter((r) => laborerIds.includes(r.laborerId))
-          .map((r) => r.id);
+    const laborerIds = seed.laborers
+      .filter((c) => c.number === laborerNumber)
+      .map((c) => c.id);
+    const rateIds = seed.rates
+      .filter((r) => laborerIds.includes(r.laborerId))
+      .map((r) => r.id);
     const filtered = seed.loanPayments.filter((r) =>
       rateIds.includes(r.rateId),
     );
@@ -174,6 +174,52 @@ describe("GET /loanPayments", () => {
       }),
     );
   });
+  it("should return all exports given productionDayId", async () => {
+    const productionDayId = seed.productionDays[0].id;
+    const res: PaginatedLoanPaymentsResponse = await auth().get(
+      `/loanPayments?productionDayId=${productionDayId}`,
+    );
+    const filtered = seed.loanPayments.filter(
+      (c) => c.productionDayId === productionDayId,
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
+  it("should return all exports given productionDate", async () => {
+    const productionDate = seed.productionDays[0].productionDate
+      .toISOString()
+      .slice(0, 10);
+    const res: PaginatedLoanPaymentsResponse = await auth().get(
+      `/loanPayments?productionDate=${productionDate}`,
+    );
+    const dayIds = seed.productionDays
+      .filter(
+        (d) => d.productionDate.toISOString().slice(0, 10) === productionDate,
+      )
+      .map((d) => d.id);
+    const filtered = seed.loanPayments.filter((c) =>
+      dayIds.includes(c.productionDayId),
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all loanPayment given occurredFrom and occurredTo", async () => {
     const occurredFrom = seed.loanPayments[0].occurredAt;
     const occurredTo = seed.loanPayments[2].occurredAt;
@@ -181,7 +227,7 @@ describe("GET /loanPayments", () => {
       `/loanPayments?occurredFrom=${encodeURIComponent(occurredFrom.toISOString())}&occurredTo=${encodeURIComponent(occurredTo.toISOString())}`,
     );
     const filtered = seed.loanPayments.filter(
-      (r) => r.occurredAt >= occurredFrom && r.occurredAt<=occurredTo,
+      (r) => r.occurredAt >= occurredFrom && r.occurredAt <= occurredTo,
     );
 
     expect(res.status).toBe(200);
@@ -254,6 +300,7 @@ describe("POST /loanPayments", () => {
   it("should create loanPayment successfully given valid data", async () => {
     const payload = {
       rateId: seed.rates[1].id,
+      productionDayId: seed.productionDays[0].id,
       amount: 300,
     };
     const res: LoanPaymentResponse = await auth()
@@ -267,6 +314,7 @@ describe("POST /loanPayments", () => {
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth().post("/loanPayments").send({
       rateId: -1,
+      productionDayId: -1,
       amount: -300,
       occurredAt: "bad date",
     });
@@ -278,6 +326,11 @@ describe("POST /loanPayments", () => {
         key: "body",
         message: "value can only be a positive integer",
         path: ["rateId"],
+      },
+      {
+        key: "body",
+        message: "value can only be a positive integer",
+        path: ["productionDayId"],
       },
       {
         key: "body",
@@ -295,23 +348,35 @@ describe("POST /loanPayments", () => {
   it("should fail if rate isn't found", async () => {
     const res: ErrorResponse = await auth().post("/loanPayments").send({
       rateId: 99999999,
+      productionDayId: seed.productionDays[0].id,
       amount: 300,
     });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No rate exists with that ID");
+    expect(res.body.message).toBe("No rate/productionDay exists with that ID");
   });
-    it("should fail if rateId belongs to a paid rate", async () => {
-      const res: ErrorResponse = await auth().post(`/loanPayments`).send({
-        amount: 300,
-        rateId: seed.rates[0].id,
-      });
-
-      expect(res.status).toBe(409);
-      expect(res.body.message).toBe(
-        "can't change attendance, loan, loanPayment or payment of a paid rate",
-      );
+  it("should fail if productionDay isn't found", async () => {
+    const res: ErrorResponse = await auth().post("/loanPayments").send({
+      rateId: seed.rates[1].id,
+      productionDayId: 99999999,
+      amount: 300,
     });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe("No rate/productionDay exists with that ID");
+  });
+  it("should fail if rateId belongs to a paid rate", async () => {
+    const res: ErrorResponse = await auth().post(`/loanPayments`).send({
+      amount: 300,
+      rateId: seed.rates[0].id,
+      productionDayId: seed.productionDays[0].id,
+    });
+
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "can't change attendance, loan, loanPayment or payment of a paid rate",
+    );
+  });
 });
 
 describe("PATCH /loanPayments/:id", () => {
@@ -358,7 +423,7 @@ describe("PATCH /loanPayments/:id", () => {
   it("should fail given invalid data", async () => {
     const res: ErrorResponse = await auth()
       .patch(`/loanPayments/${seed.loanPayments[2].id}`)
-      .send({ rateId: -1, amount: -300 });
+      .send({ rateId: -1, productionDayId: -1, amount: -300 });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toBe("Validation Error");
@@ -367,6 +432,11 @@ describe("PATCH /loanPayments/:id", () => {
         key: "body",
         message: "value can only be a positive integer",
         path: ["rateId"],
+      },
+      {
+        key: "body",
+        message: "value can only be a positive integer",
+        path: ["productionDayId"],
       },
       {
         key: "body",
@@ -382,7 +452,7 @@ describe("PATCH /loanPayments/:id", () => {
       .send({ rateId: 99999999 });
 
     expect(res.status).toBe(409);
-    expect(res.body.message).toBe("No rate exists with that ID");
+    expect(res.body.message).toBe("No rate/productionDay exists with that ID");
   });
   it("should fail if current rateId belongs to a paid rate", async () => {
     const res: ErrorResponse = await auth()
