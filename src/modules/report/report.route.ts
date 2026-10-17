@@ -14,19 +14,11 @@ router.get(
 );
 
 router.get(
-  "/production",
-  authorization(),
-  validation(validators.getSummary),
-  reportController.getProductionReport,
-);
-
-router.get(
   "/production/variants",
   authorization(),
   validation(validators.getSummary),
   reportController.getVariantsProductionReport,
 );
-
 router.get(
   "/production/items",
   authorization(),
@@ -40,7 +32,6 @@ router.get(
   validation(validators.getSummary),
   reportController.getVariantsConsumptionReport,
 );
-
 router.get(
   "/consumption/items",
   authorization(),
@@ -54,12 +45,30 @@ router.get(
   validation(validators.getSummary),
   reportController.getCustomerReport,
 );
-
 router.get(
   "/suppliers",
   authorization(),
   validation(validators.getSummary),
   reportController.getSuppliersReport,
+);
+
+router.get(
+  "/rates",
+  authorization(),
+  validation(validators.getSummary),
+  reportController.getRateReport,
+);
+router.get(
+  "/attendance",
+  authorization(),
+  validation(validators.getSummary),
+  reportController.getAttendanceReport,
+);
+router.get(
+  "/ledger",
+  authorization(),
+  validation(validators.getSummary),
+  reportController.getLedgerReport,
 );
 
 export default router;

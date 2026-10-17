@@ -1,5 +1,6 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
+import { PaymentType } from "../../db/generated/prisma/enums";
 
 export const getSheet = {
   params: z.strictObject({

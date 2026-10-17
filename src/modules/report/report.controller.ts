@@ -8,24 +8,18 @@ export const getReportSheet = async (req: Request, res: Response) => {
   return res.json({ data });
 };
 
-export const getProductionReport = async (req: Request, res: Response) => {
-  const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getProductionReport(query);
-  return res.json({ data });
-};
-
 export const getVariantsProductionReport = async (
   req: Request,
   res: Response,
 ) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getVariantsProductionReport(query);
+  const data = await reportService.getVariantsProductionSummary(query);
   return res.json({ data });
 };
 
 export const getItemsProductionReport = async (req: Request, res: Response) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getItemsProductionReport(query);
+  const data = await reportService.getItemsProductionSummary(query);
   return res.json({ data });
 };
 
@@ -34,7 +28,7 @@ export const getVariantsConsumptionReport = async (
   res: Response,
 ) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getVariantsConsumptionReport(query);
+  const data = await reportService.getVariantsConsumptionSummary(query);
   return res.json({ data });
 };
 
@@ -43,18 +37,36 @@ export const getItemsConsumptionReport = async (
   res: Response,
 ) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getItemsConsumptionReport(query);
+  const data = await reportService.getItemsConsumptionSummary(query);
   return res.json({ data });
 };
 
 export const getCustomerReport = async (req: Request, res: Response) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getCustomerReport(query);
+  const data = await reportService.getCustomerSummary(query);
   return res.json({ data });
 };
 
 export const getSuppliersReport = async (req: Request, res: Response) => {
   const query = req.query as unknown as getSummaryQueryDTO;
-  const data = await reportService.getSuppliersReport(query);
+  const data = await reportService.getSuppliersSummary(query);
+  return res.json({ data });
+};
+
+export const getRateReport = async (req: Request, res: Response) => {
+  const query = req.query as unknown as getSummaryQueryDTO;
+  const data = await reportService.getRateSummary(query);
+  return res.json({ data });
+};
+
+export const getAttendanceReport = async (req: Request, res: Response) => {
+  const query = req.query as unknown as getSummaryQueryDTO;
+  const data = await reportService.getAttendanceSummary(query);
+  return res.json({ data });
+};
+
+export const getLedgerReport = async (req: Request, res: Response) => {
+  const query = req.query as unknown as getSummaryQueryDTO;
+  const data = await reportService.getLedgerSummary(query);
   return res.json({ data });
 };
