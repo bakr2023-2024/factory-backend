@@ -408,7 +408,7 @@ describe("POST /supplierReturnItems", () => {
     const payload = {
       supplierReturnId: seed.supplierReturns[0].id,
       importItemId: seed.importItems[3].id,
-      quantity: 7,
+      quantity: 3,
       unitPrice: 5.5,
     };
 
@@ -476,6 +476,20 @@ describe("POST /supplierReturnItems", () => {
       "No supplierReturn/importItem exists with that ID",
     );
   });
+    it("should fail if created quantity is more than imported quantity", async () => {
+      const res: ErrorResponse = await auth()
+        .post("/supplierReturnItems")
+        .send({
+          supplierReturnId: seed.supplierReturns[0].id,
+          importItemId: seed.importItems[4].id,
+          quantity: 99999999,
+          unitPrice: 5.5,
+        });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe(
+        "returned quantity can't be more than imported quantity",
+      );
+    });
 });
 
 describe("PATCH /supplierReturnItems/:id", () => {
@@ -484,12 +498,12 @@ describe("PATCH /supplierReturnItems/:id", () => {
 
     const res: SupplierReturnItemResponse = await auth()
       .patch(`/supplierReturnItems/${item.id}`)
-      .send({ quantity: 50 });
+      .send({ quantity: 8 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({ ...item, quantity: 50 }),
+        ...json({ ...item, quantity: 8 }),
         updatedAt: expect.any(String),
       },
     });
@@ -500,7 +514,7 @@ describe("PATCH /supplierReturnItems/:id", () => {
         expect(res2.body.data[0]).toMatchObject({
           typeRef: res.body.data.id,
           type: "SUPPLIER_RETURN_ITEM",
-          quantityChanged: -50,
+          quantityChanged: -8,
         });
   });
 
@@ -562,6 +576,15 @@ describe("PATCH /supplierReturnItems/:id", () => {
       "No supplierReturn/importItem exists with that ID",
     );
   });
+    it("should fail if updated quantity is more than imported quantity", async () => {
+      const res: ErrorResponse = await auth()
+        .patch(`/supplierReturnItems/${seed.supplierReturnItems[0].id}`)
+        .send({ quantity: 99999999 });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe(
+        "returned quantity can't be more than imported quantity",
+      );
+    });
 });
 
 describe("DELETE /supplierReturnItems/:id", () => {

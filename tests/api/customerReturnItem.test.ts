@@ -3,7 +3,10 @@ import { resolve } from "path";
 config({ path: resolve("config", ".env.dev") });
 
 import { describe, it, beforeAll, afterAll, expect } from "@jest/globals";
-import { CustomerReturnItem, StockMovement } from "../../src/db/generated/prisma/client";
+import {
+  CustomerReturnItem,
+  StockMovement,
+} from "../../src/db/generated/prisma/client";
 import {
   DataResponse,
   ErrorResponse,
@@ -23,7 +26,7 @@ type CustomerReturnItemResponse = DataResponse<CustomerReturnItem>;
 type PaginatedCustomerReturnItemsResponse = PaginationResponse<
   CustomerReturnItem[]
 >;
-type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>
+type PaginatedStockMovementResponse = PaginationResponse<StockMovement[]>;
 let seed: MockData;
 beforeAll(async () => {
   await cleanDatabase();
@@ -378,7 +381,7 @@ describe("POST /customerReturnItems", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
-        const res2: PaginatedStockMovementResponse = await auth().get(
+    const res2: PaginatedStockMovementResponse = await auth().get(
       `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
     );
     expect(res2.status).toBe(200);
@@ -430,10 +433,22 @@ describe("POST /customerReturnItems", () => {
       quantity: 2,
       unitPrice: 12,
     });
-
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
       "No customerReturn/exportItem exists with that ID",
+    );
+  });
+  it("should fail if created quantity is more than exported quantity", async () => {
+    const res: ErrorResponse = await auth().post("/customerReturnItems").send({
+      customerReturnId: seed.customerReturns[0].id,
+      exportItemId: seed.exportItems[4].id,
+      quantity: 99999999,
+      unitPrice: 12,
+      notes: "New returned item",
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "returned quantity can't be more than exported quantity",
     );
   });
 });
@@ -452,7 +467,7 @@ describe("PATCH /customerReturnItems/:id", () => {
         updatedAt: expect.any(String),
       },
     });
-            const res2: PaginatedStockMovementResponse = await auth().get(
+    const res2: PaginatedStockMovementResponse = await auth().get(
       `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
     );
     expect(res2.status).toBe(200);
@@ -514,6 +529,15 @@ describe("PATCH /customerReturnItems/:id", () => {
       "No customerReturn/exportItem exists with that ID",
     );
   });
+  it("should fail if updated quantity is more than exported quantity", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/customerReturnItems/${seed.customerReturnItems[0].id}`)
+      .send({ quantity: 99999999 });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "returned quantity can't be more than exported quantity",
+    );
+  });
 });
 
 describe("DELETE /customerReturnItems/:id", () => {
@@ -532,11 +556,11 @@ describe("DELETE /customerReturnItems/:id", () => {
 
     expect(res2.status).toBe(404);
     expect(res2.body.message).toBe("CustomerReturnItem not found");
-            const res3: PaginatedStockMovementResponse = await auth().get(
+    const res3: PaginatedStockMovementResponse = await auth().get(
       `/stockMovements?type=CUSTOMER_RETURN_ITEM&typeRef=${res.body.data.id}`,
     );
     expect(res3.status).toBe(200);
-    expect(res3.body.data.length).toBe(0)
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {

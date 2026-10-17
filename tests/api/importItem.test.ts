@@ -156,15 +156,15 @@ describe("POST /importItems", () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
-                const res2: PaginatedStockMovementResponse = await auth().get(
-                  `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
-                );
-                expect(res2.status).toBe(200);
-                expect(res2.body.data[0]).toMatchObject({
-                  typeRef: res.body.data.id,
-                  type: "IMPORT_ITEM",
-                  quantityChanged: payload.quantity,
-                });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "IMPORT_ITEM",
+      quantityChanged: payload.quantity,
+    });
   });
 
   it("should fail given invalid data", async () => {
@@ -237,15 +237,15 @@ describe("PATCH /importItems/:id", () => {
         updatedAt: expect.any(String),
       },
     });
-                const res2: PaginatedStockMovementResponse = await auth().get(
-                  `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
-                );
-                expect(res2.status).toBe(200);
-                expect(res2.body.data[0]).toMatchObject({
-                  typeRef: res.body.data.id,
-                  type: "IMPORT_ITEM",
-                  quantityChanged: 67,
-                });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=IMPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "IMPORT_ITEM",
+      quantityChanged: 67,
+    });
   });
 
   it("should fail given invalid id", async () => {
@@ -320,6 +320,15 @@ describe("PATCH /importItems/:id", () => {
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No import/variant exists with that ID");
+  });
+  it("should fail if updated quantity is less than returned item quantity", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/importItems/${seed.importItems[0].id}`)
+      .send({ quantity: 1 });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "returned quantity can't be more than imported quantity",
+    );
   });
 });
 

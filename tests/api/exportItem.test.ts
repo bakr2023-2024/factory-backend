@@ -321,6 +321,15 @@ describe("PATCH /exportItems/:id", () => {
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
   });
+    it("should fail if updated quantity is less than returned item quantity", async () => {
+      const res: ErrorResponse = await auth()
+        .patch(`/exportItems/${seed.exportItems[0].id}`)
+        .send({ quantity: 1 });
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe(
+        "returned quantity can't be more than exported quantity",
+      );
+    });
 });
 
 describe("DELETE /exportItems/:id", () => {

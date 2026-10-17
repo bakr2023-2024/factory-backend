@@ -6,6 +6,7 @@ import {
 import prisma from "../../db/prisma";
 import {
   ConflictException,
+  HttpException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
@@ -52,6 +53,17 @@ export const createCustomerReturnItem = async (
 ): Promise<CustomerReturnItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
+      const exportItem = await tx.exportItem.findUnique({
+        where: { id: body.exportItemId },
+      });
+      if (!exportItem)
+        throw new ConflictException(
+          "No customerReturn/exportItem exists with that ID",
+        );
+      if (exportItem.quantity < body.quantity)
+        throw new ConflictException(
+          "returned quantity can't be more than exported quantity",
+        );
       const customerReturnItem = await tx.customerReturnItem.create({
         data: body,
         include: { customerReturn: true, exportItem: true },
@@ -74,7 +86,7 @@ export const createCustomerReturnItem = async (
         throw new ConflictException(
           "No customerReturn/exportItem exists with that ID",
         );
-    }
+    }else if(err instanceof HttpException)throw err
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -84,18 +96,30 @@ export const updateCustomerReturnItem = async (
 ): Promise<CustomerReturnItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const customerReturnItem = await prisma.customerReturnItem.update({
+      if (body.quantity !== undefined) {
+        const customerReturnItem =
+          await tx.customerReturnItem.findUniqueOrThrow({
+            where: { id: params.id },
+            include: { exportItem: true },
+          });
+        if (customerReturnItem.exportItem.quantity < body.quantity)
+          throw new ConflictException(
+            "returned quantity can't be more than exported quantity",
+          );
+      }
+      const updated = await tx.customerReturnItem.update({
         where: { id: params.id },
         data: body,
       });
-      if (body.quantity !== undefined)
+      if (body.quantity !== undefined) {
         await updateStockMovement(
           tx,
           StockMovementType.CUSTOMER_RETURN_ITEM,
-          customerReturnItem.id,
-          body.quantity,
+          updated.id,
+          updated.quantity,
         );
-      return customerReturnItem;
+      }
+      return updated;
     });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -105,7 +129,7 @@ export const updateCustomerReturnItem = async (
         throw new ConflictException(
           "No customerReturn/exportItem exists with that ID",
         );
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -114,7 +138,7 @@ export const deleteCustomerReturnItem = async (
 ): Promise<CustomerReturnItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const customerReturnItem = await prisma.customerReturnItem.delete({
+      const customerReturnItem = await tx.customerReturnItem.delete({
         where: { id: params.id },
       });
       await deleteStockMovement(

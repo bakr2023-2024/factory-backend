@@ -6,6 +6,7 @@ import {
 import prisma from "../../db/prisma";
 import {
   ConflictException,
+  HttpException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
@@ -51,7 +52,7 @@ export const createImportItem = async (
 ): Promise<ImportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const importItem = await prisma.importItem.create({
+      const importItem = await tx.importItem.create({
         data: body,
         include: { import: true },
       });
@@ -78,17 +79,29 @@ export const updateImportItem = async (
 ): Promise<ImportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const importItem = await prisma.importItem.update({
+      if (body.quantity !== undefined) {
+        const importItem = await tx.importItem.findUniqueOrThrow({
+          where: { id: params.id },
+          include: { supplierReturnItem: true },
+        });
+        const returnQuantity = importItem.supplierReturnItem?.quantity;
+        if (returnQuantity !== undefined && returnQuantity > body.quantity)
+          throw new ConflictException(
+            "returned quantity can't be more than imported quantity",
+          );
+      }
+      const importItem = await tx.importItem.update({
         where: { id: params.id },
         data: body,
       });
-      if (body.quantity !== undefined)
+      if (body.quantity !== undefined) {
         await updateStockMovement(
           tx,
           StockMovementType.IMPORT_ITEM,
           importItem.id,
-          body.quantity,
+          importItem.quantity,
         );
+      }
       return importItem;
     });
   } catch (err) {
@@ -97,7 +110,7 @@ export const updateImportItem = async (
         throw new NotFoundException("ImportItem not found");
       else if (err.code === "P2003")
         throw new ConflictException("No import/variant exists with that ID");
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -106,7 +119,7 @@ export const deleteImportItem = async (
 ): Promise<ImportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
-      const importItem = await prisma.importItem.delete({
+      const importItem = await tx.importItem.delete({
         where: { id: params.id },
       });
       await deleteStockMovement(
