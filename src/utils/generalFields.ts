@@ -73,6 +73,7 @@ const sortFields: Record<Prisma.ModelName, string[]> = {
   Loan: Object.values(Prisma.LoanScalarFieldEnum),
   LoanPayment: Object.values(Prisma.LoanPaymentScalarFieldEnum),
   Payment: Object.values(Prisma.PaymentScalarFieldEnum),
+  Expense: Object.values(Prisma.ExpenseScalarFieldEnum),
 };
 export const paginated = <T>(
   data: T[],

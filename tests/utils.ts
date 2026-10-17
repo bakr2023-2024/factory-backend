@@ -3,6 +3,7 @@ import app from "../src/app";
 import prisma from "../src/db/prisma";
 import { signToken } from "../src/utils/security/token.security";
 import {
+  ExpenseType,
   ItemType,
   PaymentType,
   Role,
@@ -14,6 +15,7 @@ import {
   Customer,
   CustomerReturn,
   CustomerReturnItem,
+  Expense,
   Export,
   ExportItem,
   Import,
@@ -250,6 +252,7 @@ export type MockData = {
   payments: Payment[];
   loans: Loan[];
   loanPayments: LoanPayment[];
+  expenses: Expense[];
 };
 
 export const populateDatabase = async (): Promise<MockData> => {
@@ -726,21 +729,25 @@ export const populateDatabase = async (): Promise<MockData> => {
     data: [
       {
         rateId: rates[0].id,
+        productionDayId: productionDays[0].id,
         amount: 300,
         occurredAt: onDay(productionDays[0], 7),
       },
       {
         rateId: rates[2].id,
+        productionDayId: productionDays[2].id,
         amount: 1000,
         occurredAt: onDay(productionDays[2], 7),
       },
       {
         rateId: rates[1].id,
+        productionDayId: productionDays[1].id,
         amount: 300,
         occurredAt: onDay(productionDays[1], 7),
       },
       {
         rateId: rates[1].id,
+        productionDayId: productionDays[1].id,
         amount: 200,
         occurredAt: onDay(productionDays[1], 8),
       },
@@ -754,21 +761,25 @@ export const populateDatabase = async (): Promise<MockData> => {
       data: [
         {
           rateId: rates[0].id,
+          productionDayId: productionDays[0].id,
           amount: 60,
           occurredAt: onDay(productionDays[0], 17),
         },
         {
           rateId: rates[0].id,
+          productionDayId: productionDays[0].id,
           amount: 40,
           occurredAt: onDay(productionDays[0], 16),
         },
         {
           rateId: rates[1].id,
+          productionDayId: productionDays[1].id,
           amount: 30,
           occurredAt: onDay(productionDays[1], 16),
         },
         {
           rateId: rates[1].id,
+          productionDayId: productionDays[1].id,
           amount: 20,
           occurredAt: onDay(productionDays[1], 15),
         },
@@ -781,6 +792,7 @@ export const populateDatabase = async (): Promise<MockData> => {
     data: [
       {
         rateId: rates[0].id,
+        productionDayId: productionDays[0].id,
         gross: 600,
         loans: 300,
         loanPayments: 100,
@@ -789,6 +801,7 @@ export const populateDatabase = async (): Promise<MockData> => {
       },
       {
         rateId: rates[2].id,
+        productionDayId: productionDays[2].id,
         gross: 2000,
         loans: 1000,
         loanPayments: 0,
@@ -797,6 +810,7 @@ export const populateDatabase = async (): Promise<MockData> => {
       },
       {
         rateId: rates[4].id,
+        productionDayId: productionDays[1].id,
         gross: 0,
         loans: 0,
         loanPayments: 0,
@@ -805,7 +819,34 @@ export const populateDatabase = async (): Promise<MockData> => {
       },
     ],
   });
-
+  const expenses: Expense[] = await prisma.expense.createManyAndReturn({
+    data: [
+      {
+        productionDayId: productionDays[0].id,
+        amount: 300,
+        type: ExpenseType.BILLS,
+        occurredAt: onDay(productionDays[0], 7),
+      },
+      {
+        productionDayId: productionDays[2].id,
+        amount: 1000,
+        type: ExpenseType.REPAIRS,
+        occurredAt: onDay(productionDays[2], 7),
+      },
+      {
+        productionDayId: productionDays[1].id,
+        amount: 300,
+        type: ExpenseType.SUNDRIES,
+        occurredAt: onDay(productionDays[1], 7),
+      },
+      {
+        productionDayId: productionDays[1].id,
+        amount: 200,
+        type: ExpenseType.SUNDRIES,
+        occurredAt: onDay(productionDays[1], 8),
+      },
+    ],
+  });
   return {
     items,
     seasons,
@@ -832,5 +873,6 @@ export const populateDatabase = async (): Promise<MockData> => {
     payments,
     loans,
     loanPayments,
+    expenses,
   };
 };

@@ -58,11 +58,7 @@ export const createStockMovement = async (
   tx: Prisma.TransactionClient,
   data: StockMovementCreateInput,
 ) => {
-  const stockMovement = await tx.stockMovement.create({ data });
-  await tx.variant.update({
-    where: { id: stockMovement.variantId },
-    data: { currentStock: { increment: stockMovement.quantityChanged } },
-  });
+  await tx.stockMovement.create({ data });
 };
 
 export const updateStockMovement = async (
@@ -71,22 +67,9 @@ export const updateStockMovement = async (
   typeRef: number,
   quantityChanged: number,
 ) => {
-  const oldStockMovement = await tx.stockMovement.findUniqueOrThrow({
-    where: { type_typeRef: { type, typeRef } },
-  });
-  const stockMovement = await tx.stockMovement.update({
+  await tx.stockMovement.update({
     where: { type_typeRef: { type, typeRef } },
     data: { quantityChanged },
-  });
-  await tx.variant.update({
-    where: {
-      id: stockMovement.variantId,
-    },
-    data: {
-      currentStock: {
-        increment: quantityChanged - oldStockMovement.quantityChanged,
-      },
-    },
   });
 };
 export const deleteStockMovement = async (
@@ -94,12 +77,8 @@ export const deleteStockMovement = async (
   type: StockMovementType,
   typeRef: number,
 ) => {
-  const stockMovement = await tx.stockMovement.delete({
+  await tx.stockMovement.delete({
     where: { type_typeRef: { type, typeRef } },
-  });
-  await tx.variant.update({
-    where: { id: stockMovement.variantId },
-    data: { currentStock: { decrement: stockMovement.quantityChanged } },
   });
 };
 
