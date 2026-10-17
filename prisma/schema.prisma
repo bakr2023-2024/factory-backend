@@ -53,13 +53,12 @@ model Item {
 // --------------------------------------------------
 
 model Variant {
-  id           Int      @id @default(autoincrement())
-  itemId       Int
-  currentStock Int      @default(0)
-  unitWeight   Decimal  @default(1) @db.Decimal(6, 3)
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  itemId     Int
+  unitWeight Decimal  @default(1) @db.Decimal(6, 3)
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   item              Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
   stockMovements    StockMovement[]
@@ -119,13 +118,15 @@ model Supplier {
 }
 
 model SupplierReturn {
-  id              Int      @id @default(autoincrement())
-  supplierId      Int
-  productionDayId Int
-  notes           String?
-  occurredAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  supplierId         Int
+  productionDayId    Int
+  taxAdjustment      Decimal  @default(0) @db.Decimal(12, 2)
+  discountAdjustment Decimal  @default(0) @db.Decimal(12, 2)
+  occurredAt         DateTime @default(now())
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   supplier            Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   productionDay       ProductionDay        @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
@@ -153,13 +154,15 @@ model SupplierReturnItem {
 // --------------------------------------------------
 
 model Import {
-  id              Int      @id @default(autoincrement())
-  supplierId      Int
-  productionDayId Int
-  notes           String?
-  occurredAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  supplierId         Int
+  productionDayId    Int
+  taxAdjustment      Decimal  @default(0) @db.Decimal(12, 2)
+  discountAdjustment Decimal  @default(0) @db.Decimal(12, 2)
+  notes              String?
+  occurredAt         DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   supplier      Supplier      @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
@@ -201,13 +204,15 @@ model Customer {
 }
 
 model CustomerReturn {
-  id              Int      @id @default(autoincrement())
-  customerId      Int
-  productionDayId Int
-  notes           String?
-  occurredAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  customerId         Int
+  productionDayId    Int
+  taxAdjustment      Decimal  @default(0) @db.Decimal(12, 2)
+  discountAdjustment Decimal  @default(0) @db.Decimal(12, 2)
+  notes              String?
+  occurredAt         DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   customer            Customer             @relation(fields: [customerId], references: [id], onDelete: Restrict)
   productionDay       ProductionDay        @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
@@ -235,13 +240,15 @@ model CustomerReturnItem {
 // --------------------------------------------------
 
 model Export {
-  id              Int      @id @default(autoincrement())
-  customerId      Int
-  productionDayId Int
-  notes           String?
-  occurredAt      DateTime @default(now())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  customerId         Int
+  productionDayId    Int
+  taxAdjustment      Decimal  @default(0) @db.Decimal(12, 2)
+  discountAdjustment Decimal  @default(0) @db.Decimal(12, 2)
+  notes              String?
+  occurredAt         DateTime @default(now())
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   customer      Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
   productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
@@ -328,6 +335,10 @@ model ProductionDay {
   customerReturns   CustomerReturn[]
   supplierReturns   SupplierReturn[]
   attendances       Attendance[]
+  expenses          Expense[]
+  loans             Loan[]
+  loanPayments      LoanPayment[]
+  payments          Payment[]
 
   @@unique([productionDate, weekId])
 }
@@ -459,15 +470,17 @@ model Attendance {
 // --------------------------------------------------
 
 model Loan {
-  id         Int      @id @default(autoincrement())
-  rateId     Int
-  amount     Decimal  @db.Decimal(12, 3)
-  occurredAt DateTime @default(now())
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  rateId          Int
+  productionDayId Int
+  amount          Decimal  @db.Decimal(12, 3)
+  occurredAt      DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  rate Rate @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  rate          Rate          @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
 }
 
 // --------------------------------------------------
@@ -475,15 +488,17 @@ model Loan {
 // --------------------------------------------------
 
 model LoanPayment {
-  id         Int      @id @default(autoincrement())
-  rateId     Int
-  amount     Decimal  @db.Decimal(12, 3)
-  occurredAt DateTime @default(now())
-  notes      String?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  rateId          Int
+  productionDayId Int
+  amount          Decimal  @db.Decimal(12, 3)
+  occurredAt      DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  rate Rate @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  rate          Rate          @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
 }
 
 // --------------------------------------------------
@@ -491,16 +506,37 @@ model LoanPayment {
 // --------------------------------------------------
 
 model Payment {
-  id           Int      @id @default(autoincrement())
-  rateId       Int      @unique
-  gross        Decimal  @db.Decimal(12, 3)
-  loans        Decimal  @db.Decimal(12, 3)
-  loanPayments Decimal  @db.Decimal(12, 3)
-  net          Decimal  @db.Decimal(12, 3)
-  occurredAt   DateTime @default(now())
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  rateId          Int      @unique
+  productionDayId Int
+  gross           Decimal  @db.Decimal(12, 3)
+  loans           Decimal  @db.Decimal(12, 3)
+  loanPayments    Decimal  @db.Decimal(12, 3)
+  net             Decimal  @db.Decimal(12, 3)
+  occurredAt      DateTime @default(now())
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  rate Rate @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  rate          Rate          @relation(fields: [rateId], references: [id], onDelete: Restrict)
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
+}
+
+enum ExpenseType {
+  SUNDRIES
+  REPAIRS
+  BILLS
+}
+
+model Expense {
+  id              Int         @id @default(autoincrement())
+  productionDayId Int
+  amount          Decimal     @db.Decimal(12, 2)
+  type            ExpenseType
+  occurredAt      DateTime    @default(now())
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  productionDay ProductionDay @relation(fields: [productionDayId], references: [id], onDelete: Restrict)
 }
