@@ -85,7 +85,20 @@ describe("GET /variants", () => {
       }),
     );
   });
-
+  it("should return all variants given type", async () => {
+    const res: VariantResponse = await auth().get("/variants?type=BOX");
+    const filtered = seed.variants.filter((v) => v.type === "BOX");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual(
+      json({
+        data: filtered,
+        page: 1,
+        size: 20,
+        totalPages: Math.ceil(filtered.length / 20),
+        totalCount: filtered.length,
+      }),
+    );
+  });
   it("should return all variants sorted according to sortBy and order", async () => {
     const res: PaginatedVariantsResponse = await auth().get(
       "/variants?sortBy=unitWeight&order=desc",

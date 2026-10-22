@@ -1,12 +1,14 @@
 import z from "zod";
 import { fields } from "../../utils/generalFields";
 import { FilterRule } from "../../utils/utils";
+import { StorageType } from "../../db/generated/prisma/enums";
 
 export const paginateVariants = {
   query: fields.paginate("Variant").extend({
     itemId: fields.integerParam.optional(),
     itemName: fields.name.optional(),
     unitWeight: fields.doubleParam.optional(),
+    type: z.enum(StorageType).optional(),
   }),
 };
 export const variantRules: FilterRule<paginateVariantsDTO>[] = [
@@ -25,6 +27,7 @@ export const createVariant = {
   body: z.strictObject({
     itemId: fields.integerBody,
     unitWeight: fields.doubleBody.default(1),
+    type: z.enum(StorageType).optional(),
     notes: z.string().optional(),
   }),
 };
@@ -35,6 +38,7 @@ export const updateVariant = {
   body: z.strictObject({
     itemId: fields.integerBody.optional(),
     unitWeight: fields.doubleBody.optional(),
+    type: z.enum(StorageType).optional(),
     notes: z.string().optional(),
   }),
 };
