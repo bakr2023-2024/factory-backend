@@ -41,7 +41,7 @@ export const createProductionBatch = {
   body: z.strictObject({
     productionEntryId: fields.integerBody,
     quantity: fields.integerBody,
-    occurredAt: fields.dateTime,
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };

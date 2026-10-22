@@ -33,7 +33,7 @@ export const createSupplierReturn = {
   body: z.strictObject({
     supplierId: fields.integerBody,
     productionDayId: fields.integerBody,
-    occurredAt: fields.dateTime,
+    occurredAt: fields.dateTime.optional(),
     notes: z.string().optional(),
   }),
 };

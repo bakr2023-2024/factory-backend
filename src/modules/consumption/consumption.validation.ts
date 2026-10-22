@@ -23,7 +23,7 @@ export const createConsumption = {
   body: z.strictObject({
     productionDayId: fields.integerBody,
     variantId: fields.integerBody,
-    occurredAt: fields.dateTime,
+    occurredAt: fields.dateTime.optional(),
     quantity: fields.integerBody,
     notes: z.string().optional(),
   }),
