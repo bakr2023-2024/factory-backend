@@ -51,10 +51,16 @@ model Item {
 // --------------------------------------------------
 // Variants
 // --------------------------------------------------
-
+enum StorageType{
+  BOX
+  BASKET
+  JAR
+  BAG
+}
 model Variant {
   id         Int      @id @default(autoincrement())
   itemId     Int
+  type       StorageType @default(BOX)
   unitWeight Decimal  @default(1) @db.Decimal(6, 3)
   notes      String?
   createdAt  DateTime @default(now())
@@ -67,7 +73,7 @@ model Variant {
   productionEntries ProductionEntry[]
   consumptions      Consumption[]
 
-  @@unique([itemId, unitWeight])
+  @@unique([itemId, unitWeight,type])
 }
 
 // --------------------------------------------------
