@@ -193,6 +193,12 @@ const mockProductionDays = [
     startedAt: new Date("2026-09-25T08:00:00Z"),
     endedAt: new Date("2026-09-25T17:00:00Z"),
   }, // free: no children
+  {
+    weekIdx: 2,
+    productionDate: new Date("2026-10-09T00:00:00Z"),
+    startedAt: new Date("2026-10-09T08:00:00Z"),
+    endedAt: new Date("2026-10-09T17:00:00Z"),
+  },
 ];
 const mockRates = [
   {
@@ -306,19 +312,28 @@ export const populateDatabase = async (): Promise<MockData> => {
         { productionDayId: productionDays[2].id, variantId: variants[2].id },
         { productionDayId: productionDays[0].id, variantId: variants[3].id },
         { productionDayId: productionDays[1].id, variantId: variants[3].id },
+        { productionDayId: productionDays[4].id, variantId: variants[3].id },
       ],
     });
   // Batches 0..2 are used by the rows above. Batch 3 is free.
+  // Batch 4 belongs to entry 5, on the new day 4.
   const productionBatches: ProductionBatch[] =
     await prisma.productionBatch.createManyAndReturn({
-      data: productionEntries.slice(0, 4).map((e, idx) => ({
-        quantity: 20 * (idx + 1),
-        productionEntryId: e.id,
-        occurredAt: new Date(
-          byId(productionDays, e.productionDayId).productionDate.getTime() +
-            (9 + idx) * HOUR,
-        ),
-      })),
+      data: [
+        ...productionEntries.slice(0, 4).map((e, idx) => ({
+          quantity: 20 * (idx + 1),
+          productionEntryId: e.id,
+          occurredAt: new Date(
+            byId(productionDays, e.productionDayId).productionDate.getTime() +
+              (9 + idx) * HOUR,
+          ),
+        })),
+        {
+          quantity: 50,
+          productionEntryId: productionEntries[5].id,
+          occurredAt: onDay(productionDays[4], 9),
+        },
+      ],
     });
   stockMovements.push(
     ...(await prisma.stockMovement.createManyAndReturn({
