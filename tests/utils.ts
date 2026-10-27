@@ -8,7 +8,6 @@ import {
   PaymentType,
   Role,
   StockMovementType,
-  StorageType,
 } from "../src/db/generated/prisma/enums";
 import {
   Attendance,
@@ -118,11 +117,11 @@ const mockLaborers = [
 ];
 // Variants 0..3 are used. Variant 4 is free (item 0, no children).
 const mockVariants = [
-  { itemIdx: 0, unitWeight: 5, type: StorageType.BAG },
-  { itemIdx: 0, unitWeight: 7, type: StorageType.BOX },
-  { itemIdx: 1, unitWeight: 5, type: StorageType.BASKET },
-  { itemIdx: 2, unitWeight: 3, type: StorageType.BOX },
-  { itemIdx: 0, unitWeight: 9, type: StorageType.JAR },
+  { itemIdx: 0, unitWeight: 5 },
+  { itemIdx: 0, unitWeight: 7, type: "12 bags" },
+  { itemIdx: 1, unitWeight: 5 },
+  { itemIdx: 2, unitWeight: 3 },
+  { itemIdx: 0, unitWeight: 9, type: "6 jars" },
 ];
 const mockSeasons = [
   {

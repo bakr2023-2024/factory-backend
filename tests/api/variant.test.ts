@@ -86,8 +86,8 @@ describe("GET /variants", () => {
     );
   });
   it("should return all variants given type", async () => {
-    const res: VariantResponse = await auth().get("/variants?type=BOX");
-    const filtered = seed.variants.filter((v) => v.type === "BOX");
+    const res: VariantResponse = await auth().get("/variants?type=bags");
+    const filtered = seed.variants.filter((v) => v.type?.includes("bags"));
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
