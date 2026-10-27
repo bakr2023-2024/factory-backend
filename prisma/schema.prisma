@@ -51,21 +51,14 @@ model Item {
 // --------------------------------------------------
 // Variants
 // --------------------------------------------------
-enum StorageType {
-  BOX
-  BASKET
-  JAR
-  BAG
-}
-
 model Variant {
-  id         Int         @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   itemId     Int
-  type       StorageType @default(BOX)
-  unitWeight Decimal     @default(1) @db.Decimal(6, 3)
+  unitWeight Decimal  @default(1) @db.Decimal(6, 3)
+  type       String?
   notes      String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   item              Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
   stockMovements    StockMovement[]
@@ -74,7 +67,7 @@ model Variant {
   productionEntries ProductionEntry[]
   consumptions      Consumption[]
 
-  @@unique([itemId, unitWeight, type])
+  @@unique([itemId, unitWeight])
 }
 
 // --------------------------------------------------
