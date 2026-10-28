@@ -50,17 +50,19 @@ describe("GET /productionDays", () => {
   });
 
   it("should return paginated production days given page and size", async () => {
+    const page = 2;
+    const size = 2;
     const res: PaginatedProductionDaysResponse = await auth().get(
-      "/productionDays?page=2&size=2",
+      `/productionDays?page=${page}&size=${size}`,
     );
-
+    const sliced = seed.productionDays.slice((page - 1) * size, page * size);
     expect(res.status).toBe(200);
     expect(res.body).toEqual(
       json({
-        data: seed.productionDays.slice(2, 4),
-        page: 2,
-        size: 2,
-        totalPages: 2,
+        data: sliced,
+        page,
+        size,
+        totalPages: Math.ceil(seed.productionDays.length / size),
         totalCount: seed.productionDays.length,
       }),
     );
