@@ -52,6 +52,26 @@ export const createExportItem = async (
 ): Promise<ExportItem> => {
   try {
     return await prisma.$transaction(async (tx) => {
+      const exporte = await tx.export.findUnique({
+        where: { id: body.exportId },
+      });
+      if (!exporte)
+        throw new ConflictException("No export/variant exists with that ID");
+      const inventory = (
+        await tx.stockMovement.aggregate({
+          where: {
+            variantId: body.variantId,
+            occurredAt: { lt: exporte.occurredAt },
+          },
+          _sum: { quantityChanged: true },
+        })
+      )._sum.quantityChanged;
+      if (inventory == null)
+        throw new ConflictException("No export/variant exists with that ID");
+      if (body.quantity > inventory)
+        throw new ConflictException(
+          "export item quantity can't be higher than current inventory",
+        );
       const exportItem = await tx.exportItem.create({
         data: body,
         include: { export: true },
@@ -69,7 +89,7 @@ export const createExportItem = async (
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2003")
         throw new ConflictException("No export/variant exists with that ID");
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -80,6 +100,25 @@ export const updateExportItem = async (
   try {
     return await prisma.$transaction(async (tx) => {
       if (body.quantity !== undefined) {
+        const oldExportItem = await tx.exportItem.findUniqueOrThrow({
+          where: { id: params.id },
+          include: { export: true },
+        });
+        const inventory = (
+          await tx.stockMovement.aggregate({
+            where: {
+              variantId: body.variantId,
+              occurredAt: { lt: oldExportItem.export.occurredAt },
+            },
+            _sum: { quantityChanged: true },
+          })
+        )._sum.quantityChanged;
+        if (inventory == null)
+          throw new ConflictException("No export/variant exists with that ID");
+        if (body.quantity > inventory)
+          throw new ConflictException(
+            "export item quantity can't be higher than current inventory",
+          );
         const exportItem = await tx.exportItem.findUniqueOrThrow({
           where: { id: params.id },
           include: { customerReturnItem: true },

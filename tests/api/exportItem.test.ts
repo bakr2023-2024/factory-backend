@@ -146,8 +146,8 @@ describe("POST /exportItems", () => {
   it("should create exportItem given valid data", async () => {
     const payload = {
       exportId: seed.exports[2].id,
-      variantId: seed.variants[1].id,
-      quantity: 7,
+      variantId: seed.variants[0].id,
+      quantity: 2,
       unitPrice: 5.5,
     };
     const res: ExportItemResponse = await auth()
@@ -155,7 +155,6 @@ describe("POST /exportItems", () => {
       .send(payload);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
-
     const res2: PaginatedStockMovementResponse = await auth().get(
       `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
     );
@@ -201,25 +200,35 @@ describe("POST /exportItems", () => {
   it("should fail if export isn't found", async () => {
     const res: ErrorResponse = await auth().post("/exportItems").send({
       exportId: 99999999,
-      variantId: seed.variants[3].id,
-      quantity: 7,
+      variantId: seed.variants[4].id,
+      quantity: 2,
       unitPrice: 5.5,
     });
-
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
   });
 
   it("should fail if variant isn't found", async () => {
     const res: ErrorResponse = await auth().post("/exportItems").send({
-      exportId: seed.exports[2].id,
+      exportId: seed.exports[1].id,
       variantId: 99999999,
-      quantity: 7,
+      quantity: 2,
       unitPrice: 5.5,
     });
 
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
+  });
+  it("should fail if exportItem quantity is higher than current inventory", async () => {
+    const res: ErrorResponse = await auth().post("/exportItems").send({
+      variantId: seed.variants[3].id,
+      exportId: seed.exports[2].id,
+      quantity: 99999999,
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "export item quantity can't be higher than current inventory",
+    );
   });
 });
 
@@ -228,24 +237,24 @@ describe("PATCH /exportItems/:id", () => {
     const exportItem = seed.exportItems[0];
     const res: ExportItemResponse = await auth()
       .patch(`/exportItems/${exportItem.id}`)
-      .send({ quantity: 67 });
+      .send({ quantity: 10 });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
       data: {
-        ...json({ ...exportItem, quantity: 67 }),
+        ...json({ ...exportItem, quantity: 10 }),
         updatedAt: expect.any(String),
       },
     });
-                const res2: PaginatedStockMovementResponse = await auth().get(
-                  `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
-                );
-                expect(res2.status).toBe(200);
-                expect(res2.body.data[0]).toMatchObject({
-                  typeRef: res.body.data.id,
-                  type: "EXPORT_ITEM",
-                  quantityChanged: -67,
-                });
+    const res2: PaginatedStockMovementResponse = await auth().get(
+      `/stockMovements?type=EXPORT_ITEM&typeRef=${res.body.data.id}`,
+    );
+    expect(res2.status).toBe(200);
+    expect(res2.body.data[0]).toMatchObject({
+      typeRef: res.body.data.id,
+      type: "EXPORT_ITEM",
+      quantityChanged: -10,
+    });
   });
 
   it("should fail given invalid id", async () => {
@@ -321,15 +330,24 @@ describe("PATCH /exportItems/:id", () => {
     expect(res.status).toBe(409);
     expect(res.body.message).toBe("No export/variant exists with that ID");
   });
-    it("should fail if updated quantity is less than returned item quantity", async () => {
-      const res: ErrorResponse = await auth()
-        .patch(`/exportItems/${seed.exportItems[0].id}`)
-        .send({ quantity: 1 });
-      expect(res.status).toBe(409);
-      expect(res.body.message).toBe(
-        "returned quantity can't be more than exported quantity",
-      );
-    });
+  it("should fail if updated exportItem quantity is less than returned item quantity", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/exportItems/${seed.exportItems[0].id}`)
+      .send({ quantity: 1 });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "returned quantity can't be more than exported quantity",
+    );
+  });
+  it("should fail if exportItem quantity is higher than current inventory", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/exportItems/${seed.exportItems[0].id}`)
+      .send({ quantity: 99999999 });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "export item quantity can't be higher than current inventory",
+    );
+  });
 });
 
 describe("DELETE /exportItems/:id", () => {

@@ -667,7 +667,7 @@ export const populateDatabase = async (): Promise<MockData> => {
         ...productionDays.slice(0, 3).map((d, idx) => ({
           productionDayId: d.id,
           variantId: variants[idx].id,
-          quantity: 5 * (idx + 1),
+          quantity: 2 * (idx + 1),
           occurredAt: new Date(d.productionDate.getTime() + (10 + idx) * HOUR),
         })),
         {

@@ -330,16 +330,13 @@ describe("GET /consumptions/:id", () => {
 describe("POST /consumptions", () => {
   it("should create consumption successfully given valid data", async () => {
     const payload = {
-      productionDayId: seed.productionDays[0].id,
+      productionDayId: seed.productionDays[3].id,
       variantId: seed.variants[1].id,
-      occurredAt: "2026-09-24T12:00:00.000Z",
-      quantity: 7,
-      notes: "New consumption",
+      quantity: 2,
     };
     const res: ConsumptionResponse = await auth()
       .post("/consumptions")
       .send(payload);
-
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ data: payload });
     const res2: PaginatedStockMovementResponse = await auth().get(
@@ -398,6 +395,17 @@ describe("POST /consumptions", () => {
     expect(res.status).toBe(409);
     expect(res.body.message).toBe(
       "No productionDay/variant exists with that ID",
+    );
+  });
+  it("should fail if consumption quantity is higher than current inventory", async () => {
+    const res: ErrorResponse = await auth().post("/consumptions").send({
+      variantId: seed.variants[3].id,
+      productionDayId: seed.productionDays[0].id,
+      quantity: 99999999,
+    });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "consumption quantity can't be higher than current inventory",
     );
   });
 });
@@ -478,6 +486,15 @@ describe("PATCH /consumptions/:id", () => {
       "No productionDay/variant exists with that ID",
     );
   });
+  it("should fail if consumption quantity is higher than current inventory", async () => {
+    const res: ErrorResponse = await auth()
+      .patch(`/consumptions/${seed.consumptions[0].id}`)
+      .send({ quantity: 99999999 });
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe(
+      "consumption quantity can't be higher than current inventory",
+    );
+  });
 });
 
 describe("DELETE /consumptions/:id", () => {
@@ -500,7 +517,7 @@ describe("DELETE /consumptions/:id", () => {
       `/stockMovements?type=CONSUMPTION&typeRef=${res.body.data.id}`,
     );
     expect(res3.status).toBe(200);
-    expect(res3.body.data.length).toBe(0)
+    expect(res3.body.data.length).toBe(0);
   });
 
   it("should fail given invalid id", async () => {

@@ -6,6 +6,7 @@ import {
 import prisma from "../../db/prisma";
 import {
   ConflictException,
+  HttpException,
   InternalServerException,
   NotFoundException,
 } from "../../utils/exceptions";
@@ -52,11 +53,28 @@ export const createConsumption = async (
 ): Promise<Consumption> => {
   try {
     return await prisma.$transaction(async (tx) => {
+      const inventory = (
+        await tx.stockMovement.aggregate({
+          where: {
+            variantId: body.variantId,
+            occurredAt: { lt: body.occurredAt },
+          },
+          _sum: { quantityChanged: true },
+        })
+      )._sum.quantityChanged;
+      if (inventory == null)
+        throw new ConflictException(
+          "No productionDay/variant exists with that ID",
+        );
+      if (body.quantity > inventory)
+        throw new ConflictException(
+          "consumption quantity can't be higher than current inventory",
+        );
       const consumption = await tx.consumption.create({ data: body });
       await createStockMovement(tx, {
         variant: { connect: { id: consumption.variantId } },
         occurredAt: consumption.occurredAt,
-        productionDay: {connect:{id:consumption.productionDayId}},
+        productionDay: { connect: { id: consumption.productionDayId } },
         quantityChanged: -consumption.quantity,
         type: StockMovementType.CONSUMPTION,
         typeRef: consumption.id,
@@ -69,7 +87,7 @@ export const createConsumption = async (
         throw new ConflictException(
           "No productionDay/variant exists with that ID",
         );
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
@@ -79,6 +97,25 @@ export const updateConsumption = async (
 ): Promise<Consumption> => {
   try {
     return await prisma.$transaction(async (tx) => {
+      if (body.quantity !== undefined) {
+        const inventory = (
+          await tx.stockMovement.aggregate({
+            where: {
+              variantId: body.variantId,
+              occurredAt: { lt: body.occurredAt },
+            },
+            _sum: { quantityChanged: true },
+          })
+        )._sum.quantityChanged;
+        if (inventory == null)
+          throw new ConflictException(
+            "No productionDay/variant exists with that ID",
+          );
+        if (body.quantity > inventory)
+          throw new ConflictException(
+            "consumption quantity can't be higher than current inventory",
+          );
+      }
       const consumption = await tx.consumption.update({
         where: { id: params.id },
         data: body,
@@ -100,7 +137,7 @@ export const updateConsumption = async (
         throw new ConflictException(
           "No productionDay/variant exists with that ID",
         );
-    }
+    } else if (err instanceof HttpException) throw err;
     throw new InternalServerException((err as Error).message);
   }
 };
