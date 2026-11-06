@@ -27,7 +27,7 @@ type ProductionRow = {
   totalQuantity: number;
   totalWeight: number;
 };
-type VariantProductionSummary = {
+export type VariantProductionSummary = {
   variantId: number;
   itemName: string;
   unitWeight: number;
@@ -35,14 +35,14 @@ type VariantProductionSummary = {
   totalExported: number;
   percentage: number;
 };
-type ItemProductionSummary = {
+export type ItemProductionSummary = {
   itemId: number;
   itemName: string;
   totalProducedWeight: number;
   totalExportedWeight: number;
   percentage: number;
 };
-type VariantConsumptionSummary = {
+export type VariantConsumptionSummary = {
   variantId: number;
   itemName: string;
   unitWeight: number;
@@ -50,14 +50,14 @@ type VariantConsumptionSummary = {
   totalConsumed: number;
   percentage: number;
 };
-type ItemConsumptionSummary = {
+export type ItemConsumptionSummary = {
   itemId: number;
   itemName: string;
   totalImportedWeight: number;
   totalConsumedWeight: number;
   percentage: number;
 };
-type CustomerSummary = {
+export type CustomerSummary = {
   customerId: number;
   customerName: string;
   customerNumber: string | null;
@@ -65,7 +65,7 @@ type CustomerSummary = {
   totalSold: number;
   averageTransaction: number;
 };
-type SupplierSummary = {
+export type SupplierSummary = {
   supplierId: number;
   supplierName: string;
   supplierNumber: string | null;
@@ -73,7 +73,7 @@ type SupplierSummary = {
   totalBought: number;
   averageTransaction: number;
 };
-type Inventory = {
+export type Inventory = {
   variant: VariantWithItem;
   openingBalance: number;
   changes: StockMovement[];
@@ -221,7 +221,7 @@ export const getLedgerSummary = async (
   const q1 = Object.entries(ledgerMap).map(
     ([key, { type, amountFormula, joins, groupBy }]) => Prisma.sql`
   select t.id as "id",pd.id as "productionDayId",to_char(pd."productionDate",'YYYY-MM-DD') as "date",coalesce(${amountFormula},0)::float as "amount",${type} as "type",t.notes as "notes"
-  from ${Prisma.raw(key)} as t
+  from "${Prisma.raw(key)}" as t
   ${Prisma.join([...joins], " ")}
   join "ProductionDay" as pd on t."productionDayId" = pd.id
   join "Week" as w on pd."weekId" = w.id
@@ -233,8 +233,8 @@ export const getLedgerSummary = async (
   const q3 = Prisma.sql`
   select t."totalIn",t."totalOut",(t."totalIn"+t."totalOut")::float as "net",t.entries as "entries"
   from (
-    select sum(u."amount" filter (where u."type" in ('EXPORT','SUPPLIER_RETURN','LOAN_PAYMENT')))::float as "totalIn",
-           sum(u."amount" filter (where u."type" in ('IMPORT','CUSTOMER_RETURN','LOAN','PAYMENT','EXPENSE')))::float as "totalOut",
+    select sum(u."amount") filter (where u."type" in ('EXPORT','SUPPLIER_RETURN','LOAN_PAYMENT'))::float as "totalIn",
+           sum(u."amount") filter (where u."type" in ('IMPORT','CUSTOMER_RETURN','LOAN','PAYMENT','EXPENSE'))::float as "totalOut",
            jsonb_agg(jsonb_build_object(
             'id',u."id",
             'productionDayId',u."productionDayId",
@@ -246,7 +246,7 @@ export const getLedgerSummary = async (
     from (${q2}) as u
   ) as t
   `;
-  return await prisma.$queryRaw<Ledger>(q3);
+  return (await prisma.$queryRaw<Ledger[]>(q3))?.[0];
 };
 export const getAttendanceSummary = async (
   query: getSummaryQueryDTO,
@@ -454,7 +454,7 @@ export const getItemsProductionSummary = async (
   ]);
   const rows = await prisma.$queryRaw<ItemProductionSummary[]>`
   select t."itemId",t."itemName",t."totalProducedWeight",t."totalExportedWeight",
-    coalesce(round(t."totalExportedWeight" * 100.0 / nullif(t."totalProducedWeight", 0), 2), 0)::float as "percentage"
+    coalesce(round((t."totalExportedWeight" * 100.0 / nullif(t."totalProducedWeight", 0))::numeric, 2), 0)::float as "percentage"
   from (
     select i.id as "itemId",i.name as "itemName",
           coalesce(sum(sm."quantityChanged"*v."unitWeight") filter (where sm.type = ${StockMovementType.PRODUCTION_BATCH}), 0)::float as "totalProducedWeight",
@@ -510,13 +510,17 @@ export const getVariantsConsumptionSummary = async (
 };
 export const getItemsConsumptionSummary = async (
   query: getSummaryQueryDTO,
-): Promise<{rows:ItemConsumptionSummary[],totalImportedWeight:number,totalConsumedWeight:number}> => {
+): Promise<{
+  rows: ItemConsumptionSummary[];
+  totalImportedWeight: number;
+  totalConsumedWeight: number;
+}> => {
   const conditions = buildWhereClause(query, [
     Prisma.sql`i.type=${ItemType.MATERIAL}`,
   ]);
-  const rows= await prisma.$queryRaw<ItemConsumptionSummary[]>`
+  const rows = await prisma.$queryRaw<ItemConsumptionSummary[]>`
   select t."itemId",t."itemName",t."totalImportedWeight",t."totalConsumedWeight",
-    coalesce(round(t."totalConsumedWeight" * 100.0 / nullif(t."totalImportedWeight", 0), 2), 0)::float as "percentage"
+    coalesce(round((t."totalConsumedWeight" * 100.0 / nullif(t."totalImportedWeight", 0))::numeric, 2), 0)::float as "percentage"
   from (
     select i.id as "itemId",i.name as "itemName",
           (coalesce(sum(sm."quantityChanged"*v."unitWeight") filter (where sm.type = ${StockMovementType.IMPORT_ITEM}), 0)
@@ -535,13 +539,23 @@ export const getItemsConsumptionSummary = async (
   `;
   return {
     rows,
-    totalImportedWeight:rows.reduce((acc,row)=>acc+row.totalImportedWeight,0),
-    totalConsumedWeight:rows.reduce((acc,row)=>acc+row.totalConsumedWeight,0),
-  }
+    totalImportedWeight: rows.reduce(
+      (acc, row) => acc + row.totalImportedWeight,
+      0,
+    ),
+    totalConsumedWeight: rows.reduce(
+      (acc, row) => acc + row.totalConsumedWeight,
+      0,
+    ),
+  };
 };
 export const getCustomerSummary = async (
   query: getSummaryQueryDTO,
-): Promise<{rows:CustomerSummary[],totalSold:number,totalTransactions:number}> => {
+): Promise<{
+  rows: CustomerSummary[];
+  totalSold: number;
+  totalTransactions: number;
+}> => {
   const conditions = buildWhereClause(query);
   const sales = Prisma.sql`
   select t."customerId" as "customerId",count(*) as "transactions",sum(t.total) as "total"
@@ -559,7 +573,7 @@ export const getCustomerSummary = async (
   const returns = Prisma.sql`
   select t."customerId" as "customerId",sum(t.total) as "total"
   from (
-  select r."customerId" as "customerId",coalesce(sum(ri.quantity*ri."unitPrice"),0)+(ri."taxAdjustment"-ri."discountAdjustment") as total
+  select r."customerId" as "customerId",coalesce(sum(ri.quantity*ri."unitPrice"),0)+(r."taxAdjustment"-r."discountAdjustment") as total
   from "ProductionDay" as pd
   join "Week" as w on pd."weekId" = w.id
   join "CustomerReturn" as r on r."productionDayId" = pd.id
@@ -580,12 +594,12 @@ export const getCustomerSummary = async (
   where s."customerId" is not null or r."customerId" is not null
   order by "totalSold" desc, "transactions" desc
   `;
-  const rows= await prisma.$queryRaw<CustomerSummary[]>(q);
+  const rows = await prisma.$queryRaw<CustomerSummary[]>(q);
   return {
     rows,
-    totalSold:rows.reduce((acc,row)=>acc+row.totalSold,0),
-    totalTransactions:rows.reduce((acc,row)=>acc+row.transactions,0),
-  }
+    totalSold: rows.reduce((acc, row) => acc + row.totalSold, 0),
+    totalTransactions: rows.reduce((acc, row) => acc + row.transactions, 0),
+  };
 };
 export const getSuppliersSummary = async (
   query: getSummaryQueryDTO,
