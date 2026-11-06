@@ -99,6 +99,8 @@ model StockMovement {
   variant       Variant       @relation(fields: [variantId], references: [id])
 
   @@unique([type, typeRef])
+  @@index([variantId])
+  @@index([productionDayId])
 }
 
 // --------------------------------------------------
