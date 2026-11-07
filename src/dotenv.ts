@@ -1,3 +1,3 @@
 import { config } from "dotenv";
 import { resolve } from "path";
-config({ path: resolve("config", ".env.dev") });
+config({ path: resolve("config", ".env.prod") });
